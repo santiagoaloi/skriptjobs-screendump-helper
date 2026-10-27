@@ -1,6 +1,6 @@
 {
   "name": "skriptjobs-issue-capture",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "macOS Chrome dark-plum mockup framer & Chrome Extension for Skriptjobs GitHub issue screenshots",
   "bin": {

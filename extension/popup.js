@@ -62,7 +62,9 @@ const btnOpenFullTab = document.getElementById("btnOpenFullTab");
 const btnOpenFullTabOps = document.getElementById("btnOpenFullTabOps");
 const btnPinWindow = document.getElementById("btnPinWindow");
 const urlInput = document.getElementById("urlInput");
+const btnResetUrl = document.getElementById("btnResetUrl");
 const titleInput = document.getElementById("titleInput");
+const btnResetTitle = document.getElementById("btnResetTitle");
 const faviconInput = document.getElementById("faviconInput");
 const faviconFileInput = document.getElementById("faviconFileInput");
 const btnUploadFavicon = document.getElementById("btnUploadFavicon");
@@ -89,6 +91,8 @@ const urlParams = new URLSearchParams(window.location.search);
 const isPinnedWindow = urlParams.get("pinned") === "1";
 const pinnedSourceWindowId = urlParams.get("sourceWindowId") ? Number(urlParams.get("sourceWindowId")) : null;
 
+let pinnedSelfWindowId = null;
+let stayOnTop = isPinnedWindow;
 let rawScreenshotImage = null;
 let lastCapturedDataUrl = null;
 let lastCapturedTabUrl = "";
@@ -103,6 +107,8 @@ let openMenuWallpaperId = null;
 let renamingWallpaperId = null;
 let initialTabUrl = "https://docs.skriptjobs.localhost:3050/getting-started/installation";
 let initialTabTitle = "Installation - Skriptjobs";
+let customUrlOverride = "";
+let customTitleOverride = "";
 let customFaviconDataUrl = null;
 let currentUndoHandler = null;
 
@@ -243,36 +249,91 @@ mainAccordion.addEventListener("click", (e) => {
   setOpenAccordion(targetId, true);
 });
 
-if (btnPinWindow) {
-  if (isPinnedWindow) {
-    btnPinWindow.classList.add("active");
-    btnPinWindow.setAttribute("aria-pressed", "true");
-    btnPinWindow.setAttribute("data-tooltip", "Pinned floating window");
+function updatePinButtonUI() {
+  if (!btnPinWindow) return;
+  const isActive = Boolean(isPinnedWindow && stayOnTop);
+  btnPinWindow.classList.toggle("active", isActive);
+  btnPinWindow.classList.toggle("pinned", isActive);
+  btnPinWindow.setAttribute("aria-pressed", isActive ? "true" : "false");
+  btnPinWindow.setAttribute(
+    "data-tooltip",
+    isActive ? "Stay on top: ON (click to unpin)" : "Keep open on top"
+  );
+}
+
+async function keepPinnedWindowOnTop() {
+  if (!isPinnedWindow || !stayOnTop) return;
+  try {
+    if (!pinnedSelfWindowId && typeof chrome !== "undefined" && chrome.windows?.getCurrent) {
+      const win = await chrome.windows.getCurrent();
+      pinnedSelfWindowId = win?.id ?? null;
+    }
+    if (pinnedSelfWindowId && typeof chrome !== "undefined" && chrome.windows?.update) {
+      await chrome.windows.update(pinnedSelfWindowId, { focused: true });
+    }
+  } catch {
+    // ignore if window is closing
   }
+}
+
+if (isPinnedWindow) {
+  window.addEventListener("blur", () => {
+    if (!stayOnTop) return;
+    setTimeout(() => keepPinnedWindowOnTop(), 50);
+    setTimeout(() => keepPinnedWindowOnTop(), 160);
+  });
+}
+
+if (btnPinWindow) {
+  updatePinButtonUI();
   btnPinWindow.addEventListener("click", async () => {
     if (isPinnedWindow) {
+      stayOnTop = false;
+      updatePinButtonUI();
+      if (typeof chrome !== "undefined" && chrome.storage?.local) {
+        await chrome.storage.local.set({ stayOnTop: false, pinnedWindowId: null });
+      }
       window.close();
       return;
     }
     await saveSettings();
     if (typeof chrome !== "undefined" && chrome.windows && chrome.windows.create) {
-      let currentWinId = null;
+      let currentWin = null;
       try {
-        const win = await chrome.windows.getCurrent();
-        currentWinId = win?.id ?? null;
+        currentWin = await chrome.windows.getCurrent();
       } catch {
         // ignore
       }
+      const currentWinId = currentWin?.id ?? null;
+      const left =
+        typeof currentWin?.left === "number" && typeof currentWin?.width === "number"
+          ? Math.max(0, currentWin.left + currentWin.width - 550)
+          : undefined;
+      const top = typeof currentWin?.top === "number" ? currentWin.top + 44 : undefined;
       const query = currentWinId ? `?pinned=1&sourceWindowId=${currentWinId}` : "?pinned=1";
       const popupUrl = chrome.runtime.getURL(`popup.html${query}`);
-      await chrome.windows.create({
+      const createData = {
         url: popupUrl,
         type: "popup",
-        width: 540,
-        height: 618,
+        width: 536,
+        height: 616,
         focused: true,
+      };
+      if (typeof left === "number") createData.left = left;
+      if (typeof top === "number") createData.top = top;
+
+      const createdWin = await chrome.windows.create(createData);
+      if (chrome.storage?.local) {
+        await chrome.storage.local.set({
+          stayOnTop: true,
+          pinnedWindowId: createdWin?.id ?? null,
+          pinnedSourceWindowId: currentWinId,
+        });
+      }
+      await appendLogEvent("window:pinStayOnTop", {
+        sourceWindowId: currentWinId,
+        pinnedWindowId: createdWin?.id ?? null,
       });
-      await appendLogEvent("window:pinFloating", { sourceWindowId: currentWinId });
       window.close();
     }
   });
@@ -379,10 +440,15 @@ async function loadSettings() {
           "activeAccordionId",
           "customFaviconDataUrl",
           "customFaviconInput",
+          "customUrlOverride",
+          "customTitleOverride",
           "overrideUrl",
           "overrideTitle",
           "lastCapturedTabUrl",
+          "lastCapturedTabTitle",
           "lastCapturedDataUrl",
+          "stayOnTop",
+          "pinnedWindowId",
           "timestamp",
           "timezone",
         ],
@@ -410,9 +476,12 @@ async function saveSettings(extra = {}) {
     activeAccordionId,
     customFaviconDataUrl,
     customFaviconInput: faviconInput ? faviconInput.value.trim() : "",
+    customUrlOverride,
+    customTitleOverride,
     overrideUrl: urlInput ? urlInput.value.trim() : "",
     overrideTitle: titleInput ? titleInput.value.trim() : "",
-    lastCapturedTabUrl,
+    lastCapturedTabUrl: initialTabUrl,
+    lastCapturedTabTitle: initialTabTitle,
     lastCapturedDataUrl,
     timestamp: formatBrowserTimestamp(),
     timezone: getBrowserTimezone(),
@@ -706,7 +775,8 @@ function getSlugBaseName() {
 }
 
 /**
- * Open the full-resolution framed PNG in a new browser tab without losing any settings.
+ * Open the full-resolution framed PNG in a new browser tab without losing any settings,
+ * and keep the pinned window on top if Stay on Top is active.
  */
 async function openFullResolutionInNewTab() {
   try {
@@ -732,6 +802,10 @@ async function openFullResolutionInNewTab() {
         createProps.windowId = pinnedSourceWindowId;
       }
       await chrome.tabs.create(createProps);
+      if (isPinnedWindow && stayOnTop) {
+        setTimeout(() => keepPinnedWindowOnTop(), 60);
+        setTimeout(() => keepPinnedWindowOnTop(), 180);
+      }
     } else {
       const blob = await getCanvasBlob();
       const blobUrl = URL.createObjectURL(blob);
@@ -768,20 +842,19 @@ async function captureActiveTab(saved = {}) {
         tab.url.startsWith("blob:");
 
       if (tab && !isRestrictedUrl) {
-        const isSameTabAsBefore = saved.lastCapturedTabUrl && saved.lastCapturedTabUrl === tab.url;
         initialTabUrl = tab.url;
         lastCapturedTabUrl = tab.url;
         if (tab.title) {
           initialTabTitle = tab.title;
         }
-        urlInput.value = isSameTabAsBefore && saved.overrideUrl ? saved.overrideUrl : tab.url;
-        titleInput.value =
-          isSameTabAsBefore && saved.overrideTitle ? saved.overrideTitle : tab.title || initialTabTitle;
+        urlInput.value = customUrlOverride || initialTabUrl;
+        titleInput.value = customTitleOverride || initialTabTitle;
 
         await appendLogEvent("activeTab:detected", {
           url: urlInput.value,
           title: titleInput.value,
-          restoredOverrides: Boolean(isSameTabAsBefore),
+          hasUrlOverride: Boolean(customUrlOverride),
+          hasTitleOverride: Boolean(customTitleOverride),
         });
 
         const captureWinId = isPinnedWindow && pinnedSourceWindowId ? pinnedSourceWindowId : null;
@@ -799,9 +872,10 @@ async function captureActiveTab(saved = {}) {
       // If user opened popup while on html/preview.html, html/logs.html, or pinned window, reuse last captured screenshot & overrides
       if (saved.lastCapturedDataUrl) {
         lastCapturedDataUrl = saved.lastCapturedDataUrl;
-        lastCapturedTabUrl = saved.lastCapturedTabUrl || initialTabUrl;
-        if (saved.overrideUrl) urlInput.value = saved.overrideUrl;
-        if (saved.overrideTitle) titleInput.value = saved.overrideTitle;
+        if (saved.lastCapturedTabUrl) initialTabUrl = saved.lastCapturedTabUrl;
+        if (saved.lastCapturedTabTitle) initialTabTitle = saved.lastCapturedTabTitle;
+        urlInput.value = customUrlOverride || initialTabUrl;
+        titleInput.value = customTitleOverride || initialTabTitle;
         rawScreenshotImage = await loadImage(saved.lastCapturedDataUrl);
         await appendLogEvent("activeTab:restoredPreviousCapture", {
           tabUrl: tab?.url || "restricted",
@@ -820,9 +894,10 @@ async function captureActiveTab(saved = {}) {
       await appendLogEvent("activeTab:captureFallback", { reason: captureErr?.message || String(captureErr) }, "warn");
       if (saved.lastCapturedDataUrl) {
         lastCapturedDataUrl = saved.lastCapturedDataUrl;
-        lastCapturedTabUrl = saved.lastCapturedTabUrl || initialTabUrl;
-        if (saved.overrideUrl) urlInput.value = saved.overrideUrl;
-        if (saved.overrideTitle) titleInput.value = saved.overrideTitle;
+        if (saved.lastCapturedTabUrl) initialTabUrl = saved.lastCapturedTabUrl;
+        if (saved.lastCapturedTabTitle) initialTabTitle = saved.lastCapturedTabTitle;
+        urlInput.value = customUrlOverride || initialTabUrl;
+        titleInput.value = customTitleOverride || initialTabTitle;
         rawScreenshotImage = await loadImage(saved.lastCapturedDataUrl);
         await finishOperationLog("success", { restoredFromSession: true });
         return;
@@ -831,8 +906,8 @@ async function captureActiveTab(saved = {}) {
   }
 
   // Fallback for restricted pages or standalone preview
-  if (saved.overrideUrl) urlInput.value = saved.overrideUrl;
-  if (saved.overrideTitle) titleInput.value = saved.overrideTitle;
+  urlInput.value = customUrlOverride || initialTabUrl;
+  titleInput.value = customTitleOverride || initialTabTitle;
   const sampleSrc = urlParams.get("sample") || "assets/sample-viewport.png";
   rawScreenshotImage = await loadImage(sampleSrc);
   await finishOperationLog("success", { sampleSrc, fallback: true });
@@ -878,14 +953,45 @@ multiWallpaperInput.addEventListener("change", async (e) => {
 });
 
 // Debounced live re-render + state persistence when Override Mockup URL or Override Tab Title changes
-const debouncedRedrawPreview = debounce(async () => {
+const debouncedUrlChange = debounce(async () => {
+  const val = urlInput.value.trim();
+  customUrlOverride = val && val !== initialTabUrl ? val : "";
   await saveSettings();
   await redrawPreview();
+  await appendLogEvent("output:overrideUrl", { customUrlOverride });
 }, 280);
 
-urlInput.addEventListener("input", debouncedRedrawPreview);
-titleInput.addEventListener("input", debouncedRedrawPreview);
+const debouncedTitleChange = debounce(async () => {
+  const val = titleInput.value.trim();
+  customTitleOverride = val && val !== initialTabTitle ? val : "";
+  await saveSettings();
+  await redrawPreview();
+  await appendLogEvent("output:overrideTitle", { customTitleOverride });
+}, 280);
+
+urlInput.addEventListener("input", debouncedUrlChange);
+titleInput.addEventListener("input", debouncedTitleChange);
 blobTokenInput.addEventListener("change", () => saveSettings());
+
+if (btnResetUrl) {
+  btnResetUrl.addEventListener("click", async () => {
+    customUrlOverride = "";
+    urlInput.value = initialTabUrl;
+    await saveSettings();
+    await redrawPreview();
+    await appendLogEvent("output:resetUrl", { restoredUrl: initialTabUrl });
+  });
+}
+
+if (btnResetTitle) {
+  btnResetTitle.addEventListener("click", async () => {
+    customTitleOverride = "";
+    titleInput.value = initialTabTitle;
+    await saveSettings();
+    await redrawPreview();
+    await appendLogEvent("output:resetTitle", { restoredTitle: initialTabTitle });
+  });
+}
 
 if (btnToggleBlobToken && blobTokenInput) {
   btnToggleBlobToken.addEventListener("click", () => {
@@ -1117,6 +1223,36 @@ btnUploadBlob.addEventListener("click", async () => {
 (async () => {
   try {
     const saved = await loadSettings();
+
+    // If a pinned floating window is already open and the user clicked the toolbar icon, focus the existing pinned window
+    if (!isPinnedWindow && saved.stayOnTop && saved.pinnedWindowId && typeof chrome !== "undefined" && chrome.windows?.get) {
+      try {
+        const existingWin = await chrome.windows.get(Number(saved.pinnedWindowId));
+        if (existingWin && existingWin.id) {
+          await chrome.windows.update(existingWin.id, { focused: true });
+          window.close();
+          return;
+        }
+      } catch {
+        // Pinned window was closed; clear stale ID
+        await chrome.storage.local.set({ stayOnTop: false, pinnedWindowId: null });
+      }
+    }
+
+    if (isPinnedWindow && typeof chrome !== "undefined" && chrome.windows?.getCurrent) {
+      try {
+        const myWin = await chrome.windows.getCurrent();
+        pinnedSelfWindowId = myWin?.id ?? null;
+        stayOnTop = true;
+        updatePinButtonUI();
+        if (pinnedSelfWindowId && chrome.storage?.local) {
+          await chrome.storage.local.set({ stayOnTop: true, pinnedWindowId: pinnedSelfWindowId });
+        }
+      } catch {
+        // ignore
+      }
+    }
+
     if (saved.blobReadWriteToken) {
       blobTokenInput.value = saved.blobReadWriteToken;
     }
@@ -1145,7 +1281,13 @@ btnUploadBlob.addEventListener("click", async () => {
       selectedWallpaperId = defaultWallpaperId;
     }
 
-    // Restore custom favicon override if saved
+    // Restore saved URL, Title, and Favicon overrides
+    if (typeof saved.customUrlOverride === "string" && saved.customUrlOverride) {
+      customUrlOverride = saved.customUrlOverride;
+    }
+    if (typeof saved.customTitleOverride === "string" && saved.customTitleOverride) {
+      customTitleOverride = saved.customTitleOverride;
+    }
     if (saved.customFaviconDataUrl) {
       customFaviconDataUrl = saved.customFaviconDataUrl;
       if (faviconInput && saved.customFaviconInput) {

@@ -2,11 +2,12 @@
  * Background Service Worker for Skriptjobs - Screendump Helper
  * Handles:
  * 1. Action context menu items:
- *    - "Skriptjobs - Screendump Helper" (native top item via homepage_url -> opens GitHub repo)
+ *    - "Skriptjobs - Screendump Helper" (opens GitHub repo)
  *    - "Get Extension Logs" -> opens chrome-extension://<id>/html/logs.html
  *    - "Clear Extension Logs" -> clears stored logs
- * 2. Capturing the visible tab viewport (`chrome.tabs.captureVisibleTab`)
- * 3. Uploading framed PNGs directly to Vercel Blob (`https://blob.vercel-storage.com/...`)
+ * 2. Stay-on-Top window focus enforcement (`chrome.windows.onFocusChanged` / `chrome.tabs.onActivated`)
+ * 3. Capturing the visible tab viewport (`chrome.tabs.captureVisibleTab`)
+ * 4. Uploading framed PNGs directly to Vercel Blob (`https://blob.vercel-storage.com/...`)
  */
 
 const REPO_URL = 'https://github.com/santiagoaloi/skriptjobs-screendump-helper';
@@ -49,6 +50,44 @@ if (chrome.contextMenus?.onClicked) {
       await chrome.storage.local.set({ extensionLogs: [], skriptjobs_last_operation_log: null });
     } else if (info.menuItemId === 'open-skriptjobs-repo') {
       await chrome.tabs.create({ url: REPO_URL });
+    }
+  });
+}
+
+let refocusTimer = null;
+
+async function enforcePinnedWindowStayOnTop() {
+  try {
+    const data = await chrome.storage.local.get(['stayOnTop', 'pinnedWindowId']);
+    if (!data?.stayOnTop || !data?.pinnedWindowId) return;
+    const winId = Number(data.pinnedWindowId);
+    if (!winId) return;
+    await chrome.windows.update(winId, { focused: true });
+  } catch {
+    // Window was closed or no longer exists
+    await chrome.storage.local.set({ pinnedWindowId: null, stayOnTop: false });
+  }
+}
+
+if (chrome.windows?.onFocusChanged) {
+  chrome.windows.onFocusChanged.addListener(async (focusedWindowId) => {
+    const data = await chrome.storage.local.get(['stayOnTop', 'pinnedWindowId']);
+    if (!data?.stayOnTop || !data?.pinnedWindowId) return;
+    const pinnedWinId = Number(data.pinnedWindowId);
+    if (focusedWindowId === pinnedWinId) return;
+
+    if (refocusTimer) clearTimeout(refocusTimer);
+    refocusTimer = setTimeout(() => {
+      enforcePinnedWindowStayOnTop();
+    }, 75);
+  });
+}
+
+if (chrome.windows?.onRemoved) {
+  chrome.windows.onRemoved.addListener(async (removedWindowId) => {
+    const data = await chrome.storage.local.get(['pinnedWindowId']);
+    if (data?.pinnedWindowId && Number(data.pinnedWindowId) === removedWindowId) {
+      await chrome.storage.local.set({ pinnedWindowId: null, stayOnTop: false });
     }
   });
 }

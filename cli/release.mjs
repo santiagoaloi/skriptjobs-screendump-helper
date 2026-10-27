@@ -3,7 +3,7 @@
  * Package the Chrome Extension (`extension/`) and publish/update a GitHub Release
  * with Keep-a-Changelog release notes extracted from CHANGELOG.md.
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,14 +17,37 @@ const manifest = JSON.parse(
 const tag = process.argv[2] || `v${manifest.version}`;
 
 const distDir = path.join(rootDir, 'dist');
+const releasesDir = path.join(rootDir, 'releases');
 mkdirSync(distDir, { recursive: true });
+mkdirSync(releasesDir, { recursive: true });
 
 const versionedZip = path.join(distDir, `skriptjobs-screendump-helper-${tag}.zip`);
+const releaseCopyZip = path.join(releasesDir, `skriptjobs-screendump-helper-${tag}.zip`);
 
-execFileSync('zip', ['-rq', versionedZip, '.'], {
-  cwd: path.join(rootDir, 'extension'),
-  stdio: 'inherit',
-});
+try {
+  execFileSync('zip', ['-rq', versionedZip, '.'], {
+    cwd: path.join(rootDir, 'extension'),
+    stdio: 'inherit',
+  });
+} catch {
+  execFileSync(
+    'python3',
+    [
+      '-c',
+      `import os, sys, zipfile
+root, out = sys.argv[1], sys.argv[2]
+with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
+    for d, _, files in os.walk(root):
+        for f in sorted(files):
+            full = os.path.join(d, f)
+            zf.write(full, os.path.relpath(full, root))`,
+      path.join(rootDir, 'extension'),
+      versionedZip,
+    ],
+    { stdio: 'inherit' }
+  );
+}
+copyFileSync(versionedZip, releaseCopyZip);
 
 const changelog = readFileSync(path.join(rootDir, 'CHANGELOG.md'), 'utf8');
 const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
