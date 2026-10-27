@@ -156,6 +156,7 @@ export function buildChromeHeaderSvg({
   title = 'Installation - Skriptjobs',
   url = 'https://docs.skriptjobs.localhost:3050/getting-started/installation',
   faviconDataUrl = null,
+  omniboxFaviconDataUrl = null,
   mockupTheme = 'dark',
 }) {
   const T = CHROME_MOCKUP_THEME;
@@ -191,7 +192,7 @@ export function buildChromeHeaderSvg({
 
   // Active Tab Favicon (uses custom faviconDataUrl if provided, otherwise Skriptjobs three-triangles)
   const tabFaviconMarkup = faviconDataUrl
-    ? `<image href="${escapeXml(faviconDataUrl)}" x="${tabX + 14}" y="${tabY + 8.5}" width="16" height="16" preserveAspectRatio="xMidYMid meet" />`
+    ? `<g clip-path="url(#tabFaviconClip)"><image href="${escapeXml(faviconDataUrl)}" x="${tabX + 14}" y="${tabY + 8.5}" width="16" height="16" preserveAspectRatio="xMidYMid slice" /></g>`
     : buildSkriptjobsTrianglesSvgGroup({
         x: tabX + 14,
         y: tabY + 8.5,
@@ -202,12 +203,14 @@ export function buildChromeHeaderSvg({
         tileStroke: Hdr.faviconTileStroke,
       });
 
-  // Omnibox Start Badge (uses custom faviconDataUrl if provided, otherwise Skriptjobs three-triangles)
+  // Omnibox Start Badge (uses custom faviconDataUrl if provided, filling the r=12 circle cleanly)
   const badgeCx = omniX + 17;
   const badgeCy = omniY + 17;
+  const badgeR = 12;
   const badgeLogoSize = 16.5;
-  const omniboxBadgeLogoMarkup = faviconDataUrl
-    ? `<image href="${escapeXml(faviconDataUrl)}" x="${badgeCx - 8}" y="${badgeCy - 8}" width="16" height="16" preserveAspectRatio="xMidYMid meet" />`
+  const effectiveOmniFavicon = omniboxFaviconDataUrl || faviconDataUrl;
+  const omniboxBadgeLogoMarkup = effectiveOmniFavicon
+    ? `<g clip-path="url(#omniBadgeClip)"><image href="${escapeXml(effectiveOmniFavicon)}" x="${badgeCx - badgeR}" y="${badgeCy - badgeR}" width="${badgeR * 2}" height="${badgeR * 2}" preserveAspectRatio="xMidYMid slice" /></g>`
     : buildSkriptjobsTrianglesSvgGroup({
         x: badgeCx - badgeLogoSize / 2,
         y: badgeCy - badgeLogoSize / 2 - 0.3,
@@ -220,6 +223,12 @@ export function buildChromeHeaderSvg({
   <defs>
     <clipPath id="tabTitleClip">
       <rect x="${tabX + 36}" y="${tabY}" width="${tabW - 64}" height="${tabH}" />
+    </clipPath>
+    <clipPath id="tabFaviconClip">
+      <rect x="${tabX + 14}" y="${tabY + 8.5}" width="16" height="16" rx="3.5" ry="3.5" />
+    </clipPath>
+    <clipPath id="omniBadgeClip">
+      <circle cx="${badgeCx}" cy="${badgeCy}" r="${badgeR}" />
     </clipPath>
     <clipPath id="omniTextClip">
       <rect x="${omniX + 38}" y="${omniY}" width="${omniW - 54}" height="${omniH}" />
@@ -294,6 +303,119 @@ export function buildChromeHeaderSvg({
  * Browser Canvas 2D renderer (used by the Chrome Extension popup, content script, & Vue component).
  * Preloads the SVG header image before modifying the target canvas so redraws never flash.
  */
+
+const faviconNormCache = new Map();
+
+async function normalizeFaviconForHeader(rawFaviconUrl) {
+  if (!rawFaviconUrl) return { tabFaviconDataUrl: null, omniboxFaviconDataUrl: null };
+  if (faviconNormCache.has(rawFaviconUrl)) {
+    return faviconNormCache.get(rawFaviconUrl);
+  }
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const el = new Image();
+      el.crossOrigin = "anonymous";
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = rawFaviconUrl;
+    });
+
+    const S = 64;
+    const probe = document.createElement("canvas");
+    probe.width = S;
+    probe.height = S;
+    const pctx = probe.getContext("2d");
+    pctx.drawImage(img, 0, 0, S, S);
+    const { data } = pctx.getImageData(0, 0, S, S);
+
+    const idx = (x, y) => (y * S + x) * 4;
+    let minX = S, minY = S, maxX = -1, maxY = -1;
+    for (let y = 0; y < S; y++) {
+      for (let x = 0; x < S; x++) {
+        if (data[idx(x, y) + 3] > 20) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+
+    if (maxX < minX || maxY < minY) {
+      minX = 0; minY = 0; maxX = S - 1; maxY = S - 1;
+    }
+
+    const cropW = Math.max(1, maxX - minX + 1);
+    const cropH = Math.max(1, maxY - minY + 1);
+    const midX = Math.min(S - 1, Math.max(0, Math.round((minX + maxX) / 2)));
+    const midY = Math.min(S - 1, Math.max(0, Math.round((minY + maxY) / 2)));
+    const insetX = Math.min(3, Math.floor(cropW / 6));
+    const insetY = Math.min(3, Math.floor(cropH / 6));
+
+    const edgeSamples = [
+      idx(midX, Math.min(S - 1, minY + insetY)),
+      idx(midX, Math.max(0, maxY - insetY)),
+      idx(Math.min(S - 1, minX + insetX), midY),
+      idx(Math.max(0, maxX - insetX), midY),
+    ];
+
+    const opaqueEdges = edgeSamples.filter((i) => data[i + 3] >= 180);
+    const isFilledSquare = opaqueEdges.length >= 3;
+
+    // 1. Tab Favicon (64x64)
+    const tabCanvas = document.createElement("canvas");
+    tabCanvas.width = 64;
+    tabCanvas.height = 64;
+    const tctx = tabCanvas.getContext("2d");
+    if (isFilledSquare) {
+      const topI = edgeSamples[0];
+      const botI = edgeSamples[1];
+      const grad = tctx.createLinearGradient(0, 0, 0, 64);
+      grad.addColorStop(0, `rgb(${data[topI]}, ${data[topI + 1]}, ${data[topI + 2]})`);
+      grad.addColorStop(1, `rgb(${data[botI]}, ${data[botI + 1]}, ${data[botI + 2]})`);
+      tctx.fillStyle = grad;
+      tctx.fillRect(0, 0, 64, 64);
+    }
+    tctx.drawImage(probe, minX, minY, cropW, cropH, 0, 0, 64, 64);
+
+    // 2. Omnibox Circular Badge Favicon (96x96 -> clipped to r=12 circle)
+    const omniCanvas = document.createElement("canvas");
+    omniCanvas.width = 96;
+    omniCanvas.height = 96;
+    const octx = omniCanvas.getContext("2d");
+
+    if (isFilledSquare) {
+      const topI = edgeSamples[0];
+      const botI = edgeSamples[1];
+      const grad = octx.createLinearGradient(0, 0, 0, 96);
+      grad.addColorStop(0, `rgb(${data[topI]}, ${data[topI + 1]}, ${data[topI + 2]})`);
+      grad.addColorStop(1, `rgb(${data[botI]}, ${data[botI + 1]}, ${data[botI + 2]})`);
+      octx.fillStyle = grad;
+      octx.fillRect(0, 0, 96, 96);
+      // Draw cropped square icon slightly inset (76x76 centered in 96x96) over its own background so circle is 100% filled and inner mark is never clipped
+      const inner = 76;
+      const pad = (96 - inner) / 2;
+      octx.drawImage(probe, minX, minY, cropW, cropH, pad, pad, inner, inner);
+    } else {
+      const inner = 66;
+      const pad = (96 - inner) / 2;
+      octx.drawImage(probe, minX, minY, cropW, cropH, pad, pad, inner, inner);
+    }
+
+    const result = {
+      tabFaviconDataUrl: tabCanvas.toDataURL("image/png"),
+      omniboxFaviconDataUrl: omniCanvas.toDataURL("image/png"),
+    };
+    faviconNormCache.set(rawFaviconUrl, result);
+    return result;
+  } catch {
+    return {
+      tabFaviconDataUrl: rawFaviconUrl,
+      omniboxFaviconDataUrl: rawFaviconUrl,
+    };
+  }
+}
+
 export async function renderFramedScreenshotToCanvas({
   canvas,
   viewportImage,
@@ -322,12 +444,16 @@ export async function renderFramedScreenshotToCanvas({
   const totalW = winW + margins.left + margins.right;
   const totalH = winH + margins.top + margins.bottom;
 
+  // Normalize custom favicon so square favicons completely fill the r=12 circular URL bar badge
+  const { tabFaviconDataUrl, omniboxFaviconDataUrl } = await normalizeFaviconForHeader(faviconDataUrl);
+
   // Preload Header SVG image BEFORE touching the target canvas so there is zero flicker/flashing
   const headerSvg = buildChromeHeaderSvg({
     windowWidth: winW - 4,
     title,
     url,
-    faviconDataUrl,
+    faviconDataUrl: tabFaviconDataUrl,
+    omniboxFaviconDataUrl,
     mockupTheme,
   });
   const svgBlob = new Blob([headerSvg], { type: 'image/svg+xml;charset=utf-8' });

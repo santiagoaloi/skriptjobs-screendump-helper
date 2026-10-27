@@ -63,6 +63,9 @@ const btnUploadFavicon = document.getElementById("btnUploadFavicon");
 const btnResetFavicon = document.getElementById("btnResetFavicon");
 const faviconPreviewIcon = document.getElementById("faviconPreviewIcon");
 const blobTokenInput = document.getElementById("blobTokenInput");
+const btnToggleBlobToken = document.getElementById("btnToggleBlobToken");
+const iconBlobEye = document.getElementById("iconBlobEye");
+const iconBlobEyeOff = document.getElementById("iconBlobEyeOff");
 const btnUploadBlob = document.getElementById("btnUploadBlob");
 const btnCopyClipboard = document.getElementById("btnCopyClipboard");
 const btnDownloadPng = document.getElementById("btnDownloadPng");
@@ -378,7 +381,6 @@ function renderWallpaperGallery() {
           wp.name = trimmed;
           await saveSettings();
           await appendLogEvent("wallpaper:rename", { id: wp.id, oldName, newName: trimmed });
-          setStatus(`Renamed wallpaper to "${trimmed}".`, "success");
         }
         renamingWallpaperId = null;
         renderWallpaperGallery();
@@ -498,7 +500,7 @@ function renderWallpaperGallery() {
           renderWallpaperGallery();
           await redrawPreview();
           await appendLogEvent("wallpaper:undoRemove", { id: removedWallpaper.id, name: removedWallpaper.name });
-          setStatus(`Restored wallpaper "${removedWallpaper.name}".`, "success");
+          hideStatus();
         },
       });
     });
@@ -522,7 +524,6 @@ function renderWallpaperGallery() {
       renderWallpaperGallery();
       await redrawPreview();
       await appendLogEvent("wallpaper:setDefault", { id: wp.id, name: wp.name });
-      setStatus(`"${wp.name}" set as default wallpaper.`, "success");
     });
     dropdown.appendChild(defaultOption);
 
@@ -578,7 +579,7 @@ async function restoreDefaultWallpapers() {
       renderWallpaperGallery();
       await redrawPreview();
       await appendLogEvent("wallpapers:undoRestoreDefaults", {});
-      setStatus("Reverted to previous wallpapers.", "info");
+      hideStatus();
     },
   });
 }
@@ -735,12 +736,6 @@ multiWallpaperInput.addEventListener("change", async (e) => {
     renderWallpaperGallery();
     await redrawPreview();
     await finishOperationLog("success", { addedIds: newlyAddedIds });
-    setStatus(
-      newlyAddedIds.length === 1
-        ? "Added 1 wallpaper to your gallery."
-        : `Added ${newlyAddedIds.length} wallpapers to your gallery.`,
-      "success"
-    );
   }
   multiWallpaperInput.value = "";
 });
@@ -753,6 +748,19 @@ const debouncedRedrawPreview = debounce(() => {
 urlInput.addEventListener("input", debouncedRedrawPreview);
 titleInput.addEventListener("input", debouncedRedrawPreview);
 blobTokenInput.addEventListener("change", () => saveSettings());
+
+if (btnToggleBlobToken && blobTokenInput) {
+  btnToggleBlobToken.addEventListener("click", () => {
+    const isPassword = blobTokenInput.type === "password";
+    blobTokenInput.type = isPassword ? "text" : "password";
+    if (iconBlobEye && iconBlobEyeOff) {
+      iconBlobEye.style.display = isPassword ? "none" : "";
+      iconBlobEyeOff.style.display = isPassword ? "" : "none";
+    }
+    btnToggleBlobToken.setAttribute("data-tooltip", isPassword ? "Hide token" : "Reveal token");
+    btnToggleBlobToken.setAttribute("aria-label", isPassword ? "Hide token" : "Reveal token");
+  });
+}
 
 const debouncedFaviconChange = debounce(async () => {
   const raw = faviconInput.value.trim();
@@ -788,7 +796,6 @@ if (btnUploadFavicon && faviconFileInput) {
     updateFaviconPreviewBadge();
     await redrawPreview();
     await appendLogEvent("output:uploadFavicon", { fileName: file.name });
-    setStatus(`Applied custom favicon "${file.name}" to tab & URL bar.`, "success");
     faviconFileInput.value = "";
   });
 }
@@ -800,14 +807,12 @@ if (btnResetFavicon) {
     updateFaviconPreviewBadge();
     await redrawPreview();
     await appendLogEvent("output:resetFavicon", {});
-    setStatus("Reset favicon to Skriptjobs default.", "info");
   });
 }
 
 // Copy framed PNG to clipboard
 btnCopyClipboard.addEventListener("click", async () => {
   try {
-    setStatus("Copying framed PNG to clipboard...", "info");
     await startOperationLog("copyPngToClipboard", {
       url: urlInput.value.trim(),
       title: titleInput.value.trim(),
@@ -817,7 +822,6 @@ btnCopyClipboard.addEventListener("click", async () => {
     const blob = await getCanvasBlob();
     await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
     await finishOperationLog("success", { sizeBytes: blob.size });
-    setStatus("Copied framed PNG to clipboard!", "success");
   } catch (err) {
     await finishOperationLog("error", { message: err.message });
     setStatus(`Clipboard error: ${err.message}`, "error");
@@ -841,13 +845,11 @@ btnDownloadPng.addEventListener("click", async () => {
   a.click();
   URL.revokeObjectURL(url);
   await finishOperationLog("success", { filename, sizeBytes: blob.size });
-  setStatus(`Downloaded ${filename}`, "success");
 });
 
 // Download Light & Dark ZIP for Nuxt UI <UColorModeImage />
 btnDownloadThemeZip.addEventListener("click", async () => {
   try {
-    setStatus("Rendering Light & Dark mockups for ZIP...", "info");
     const baseName = getSlugBaseName();
     await startOperationLog("downloadLightDarkZip", {
       baseName,
@@ -911,7 +913,7 @@ btnDownloadThemeZip.addEventListener("click", async () => {
       files: [lightFilename, darkFilename],
       sizeBytes: zipBlob.size,
     });
-    setStatus(`Downloaded ${zipFilename} (${lightFilename} & ${darkFilename})`, "success");
+
   } catch (err) {
     await finishOperationLog("error", { message: err.message });
     setStatus(`ZIP export failed: ${err.message}`, "error");
