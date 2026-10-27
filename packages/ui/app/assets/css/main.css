@@ -1,0 +1,716 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+@import "./scrollbar.css";
+@import "./cookie-consent.css";
+@import "./form-calendar-range.css";
+@import "./form-calendar-single.css";
+@import "./landing-reveal.css";
+@import "./marketing-hero-backdrop-dynamics.css";
+@import "./no-input-zoom.css";
+
+/* Force-include role color classes (used dynamically in d-company-member-roles.ts) */
+@source inline("{bg,text}-{rose,blue,indigo,teal,amber}-{100,600} {bg,text}-green-{100,700} {bg,text}-red-{100,600} bg-{rose,blue,indigo,teal,amber,green,red,neutral}-500 dark:{bg,text}-{rose,blue,indigo,teal,amber,green,red}-{300} dark:bg-{rose,blue,indigo,teal,amber,green,red}-900/50 {bg,text}-neutral-{200,600,500} dark:bg-neutral-700 dark:text-neutral-300 max-w-content !bg-[var(--skript-primary-solid-bg)] hover:!bg-[var(--skript-primary-solid-bg-hover)] active:!bg-[var(--skript-primary-solid-bg-hover)] !text-[var(--skript-primary-solid-fg)]");
+
+/* app.config.ts tooltip — important variants are not scanned from that file */
+@source inline("light:bg-white! light:fill-white!");
+
+/* Sidebar list presence bullets (job search Flagged / History) — class strings live in features/ (not scanned); keep in sync with sidebarListIndicatorDotClass */
+@source inline("{bg,text}-indicator-{applied,muted,search-ai,search-lucky}");
+
+/* Salary grid (job post) — unprefixed spans used only in feature-layer files; pin them so the 5/3/2/2 row keeps its widths */
+@source inline("grid grid-cols-12 gap-3 col-span-5 col-span-3 col-span-2 min-w-0 items-end");
+
+/* Marketing layout classes — strings in @skriptjobs/shared/utils (Tailwind scan) */
+@source inline("max-w-content mx-auto px-8 px-8! sm:px-8! lg:px-8! xl:px-8! px-0! sm:px-0! lg:px-0! xl:px-0! ps-12 pe-8 sm:ps-14 sm:pe-10 py-10 sm:py-14 lg:py-20 xl:py-24 pt-10 sm:pt-14 lg:pt-20 xl:pt-24 pb-10 sm:pb-14 lg:pb-20 xl:pb-24 py-10! sm:py-10! lg:py-16! pt-5! sm:pt-5! lg:pt-8! pt-0! sm:pt-0! pb-10! sm:pb-10! lg:pt-0! lg:pb-16! md:grid-cols-12 lg:grid-cols-12 md:col-span-7 md:col-span-5 lg:col-span-7 lg:col-span-5 md:border-x md:border-r md:pr-12 md:pl-12 md:pr-8 -mx-8 min-h-screen bg-bg-card light:bg-white dark:bg-bg-card pb-28 md:pb-40 pb-32 lg:pb-40 py-0! sm:py-0! lg:py-0! xl:py-0! gap-0! sm:gap-0! lg:gap-0! lg:flex! lg:flex-col! md:self-start md:sticky top-[calc(var(--ui-header-height)+3rem)] top-[calc(var(--ui-header-height)+2rem)] xl:grid-cols-[minmax(0,1fr)_minmax(0,38%)] xl:grid-cols-[minmax(0,1fr)_26rem] xl:gap-x-10 2xl:gap-x-14 xl:items-start xl:items-stretch xl:items-stretch! xl:grid-cols! justify-between h-full mx-0! sm:mx-0! lg:ms-0! lg:grid! lg:grid-cols-2! lg:grid-cols-[minmax(0,1fr)_minmax(0,45%)]! lg:items-stretch! absolute inset-0 size-full");
+@source "../../../../shared/utils/u-app-shell-layout.ts";
+@source "../../../../shared/utils/u-pill-segmented-tabs-ui.ts";
+@source "../../../../shared/utils/u-count-circle-badge.ts";
+@source "../../../../shared/utils/u-compact-nav.ts";
+@source "../../../../shared/utils/u-settings-field-layout.ts";
+@source "../../../../shared/utils/u-dashboard-page-header.ts";
+@source "../../../../shared/utils/u-dashboard-table.ts";
+@source "../../../../shared/utils/u-dropdown-menu.ts";
+@source "../../../../shared/utils/u-carousel-drag-cursor.ts";
+@source "../../../../shared/composables/use-scroll-bottom-fade.ts";
+@source "../../../../../features/dashboard/company/settings/utils/u-image-library-grid-scale.ts";
+/* Scroll bottom fades — keep in sync with SCROLL_BOTTOM_FADE_* in use-scroll-bottom-fade.ts */
+@source inline("pointer-events-none absolute inset-x-0 bottom-0 z-10 z-30 h-12 h-14 bg-linear-to-t from-white dark:from-bg1 from-default to-transparent fixed hidden dark:block");
+
+
+@theme static {
+
+  /* Functional errors — saturated red axis (less coral than GitHub’s #f85149 on `bg-error`) */
+  --color-error-50:  #fff5f5;
+  --color-error-100: #ffe4e6;
+  --color-error-200: #fecdd3;
+  --color-error-300: #fda4af;
+  --color-error-400: #fb7185;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-error-700: #b91c1c;
+  --color-error-800: #991b1b;
+  --color-error-900: #7f1d1d;
+  --color-error-950: #450a0a;
+  
+  --color-link-hover: var(--ui-link-hover);
+  
+  /* Backgrounds */
+  --color-bg1: var(--ui-bg); /* Background 1: Default element background */
+  --color-bg2: var(--ui-bg2); /* Background 2: Secondary background */
+  --color-bg-card: var(--ui-bg-card);
+  --color-bg-card-hover: var(--ui-bg-card-hover);
+  --color-nav-item-hover: var(--ui-nav-item-hover);
+  /* UI Tokens */
+  --color-text-default: var(--ui-text);
+  --color-border-default: var(--ui-border);
+  --color-highlighted: var(--ui-text-highlighted);
+  --color-dimmed: var(--ui-text-dimmed);
+
+  /**
+   * Cursor Dark Anysphere syntax / terminal accents
+   * (`theme-cursor/themes/cursor-dark-color-theme.json`).
+   * Role badges: `@skriptjobs/shared/utils/u-job-role-color`.
+   * Sidebar presence bullets reuse the four indicator aliases below.
+   */
+  --color-syntax-keyword: #82d2ce;
+  --color-syntax-type: #87c3ff;
+  --color-syntax-markdown: #88c0d0;
+  --color-syntax-control: #a8cc7c;
+  --color-syntax-constant: #aaa0fa;
+  --color-syntax-self: #cc7c8a;
+  --color-syntax-string: #e394dc;
+  --color-syntax-function: #ebc88d;
+  --color-syntax-method: #efb080;
+  --color-syntax-storage: #f8c762;
+  --color-syntax-meta: #fad075;
+  --color-syntax-error: #f14c4c;
+  --color-syntax-foreground: #d6d6dd;
+  --color-syntax-punctuation: #cccccc;
+  --color-syntax-ansi-magenta: #b48ead;
+  --color-syntax-ansi-red: #fc6b83;
+  --color-syntax-ansi-yellow: #d2943e;
+  --color-syntax-ansi-green: #3fa266;
+  --color-syntax-ansi-bright-green: #70b489;
+  --color-syntax-ansi-blue: #81a1c1;
+  --color-syntax-ansi-bright-yellow: #f1b467;
+  --color-syntax-charts-red: #e34671;
+  --color-syntax-warning: #ea7620;
+
+  /** Presence bullets — aliases into the syntax palette above. */
+  --color-indicator-applied: var(--color-syntax-keyword);
+  --color-indicator-muted: var(--color-syntax-function);
+  --color-indicator-search-ai: var(--color-syntax-string);
+  --color-indicator-search-lucky: var(--color-syntax-foreground);
+
+  /* Field Focus Tokens */
+  --color-field-focus-border: var(--ui-field-focus-border);
+  --color-field-focus-ring: var(--ui-field-focus-ring);
+
+  /* Field Focus Error Tokens */
+  --color-field-focus-error-border: var(--ui-field-focus-error-border);
+  --color-field-focus-error-ring: var(--ui-field-focus-error-ring);
+  --color-item-bg: var(--ui-item-bg);
+  --color-item-bg-strong: var(--ui-item-bg-strong);
+  --color-drawer-item-bg: var(--ui-drawer-item-bg);
+  --color-selection-bg: var(--ui-selection-bg);
+
+  /**
+   * Product Features category badges — values from `--blog-cat-*`
+   * (`:root` / `.dark`). See `u-blog-category-chrome.ts`.
+   */
+  --color-blog-cat-product-updates-bg: var(--blog-cat-product-updates-bg);
+  --color-blog-cat-product-updates-fg: var(--blog-cat-product-updates-fg);
+  --color-blog-cat-features-bg: var(--blog-cat-features-bg);
+  --color-blog-cat-features-fg: var(--blog-cat-features-fg);
+  --color-blog-cat-integrations-bg: var(--blog-cat-integrations-bg);
+  --color-blog-cat-integrations-fg: var(--blog-cat-integrations-fg);
+  --color-blog-cat-news-bg: var(--blog-cat-news-bg);
+  --color-blog-cat-news-fg: var(--blog-cat-news-fg);
+  --color-blog-cat-mobile-bg: var(--blog-cat-mobile-bg);
+  --color-blog-cat-mobile-fg: var(--blog-cat-mobile-fg);
+  --color-blog-cat-security-bg: var(--blog-cat-security-bg);
+  --color-blog-cat-security-fg: var(--blog-cat-security-fg);
+
+  /**
+   * Platform fonts (#709) — Vercel Geist everywhere.
+   * `font-serif` / `serif-title` keep their class names; the token is Geist (not Cambria).
+   * Faces loaded by `@nuxt/fonts` in `packages/ui/nuxt.config.ts`.
+   */
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+
+  /* Centered page/shell width — use `max-w-content` (see `--skript-content-max-width`) */
+  --max-width-content: var(--skript-content-max-width);
+
+}
+
+:root {
+  /* 
+   ==========================================================================
+   NUXT UI LIGHT THEME OVERRIDES
+   Standardized color tokens derived from the neutral palette (Zinc).
+   Refined for higher contrast to match Nuxt UI documentation aesthetic.
+   ==========================================================================
+  */
+
+  /**
+   * Page canvas (`bg-default`). Same fill on `html`, `body`, SPA boot HTML, and
+   * `theme-color` (`THEME_CANVAS_BG_LIGHT` / `THEME_CANVAS_BG_DARK`).
+   */
+  --ui-bg: #fafafa;
+  /** Sidebars / slideovers — solid white in light (not canvas `--ui-bg`). */
+  --ui-bg-sidebar: white;
+  /**
+   * Elevated surface — Nuxt UI zinc-100 (`#f4f4f5`). Soft/subtle button fill;
+   * replaces the old cream on inset cards (`bg-drawer-item-bg`) and chrome hovers
+   * (menus, sidebar items, tables). White `bg-bg-card` surfaces stay white.
+   */
+  --ui-bg-elevated: var(--color-neutral-100);
+  --ui-item-bg-strong: var(--ui-bg-elevated);
+  /** Secondary surfaces (pill tracks, inset panels) — darker than canvas `--ui-bg`. */
+  --ui-bg-muted: var(--ui-item-bg-strong);
+  --ui-bg2: var(--ui-bg-muted);
+  --ui-bg-card: white;
+  /* Header nav hovers on white chrome (mirrors dark `--ui-nav-item-hover`). */
+  --ui-nav-item-hover: var(--ui-item-bg-strong);
+  /* Table / select hovers — same elevated fill as menus and sidebar items. */
+  --ui-item-bg: var(--ui-bg-elevated);
+  /* Interactive list rows + cream-style inset cards (`bg-drawer-item-bg`). */
+  --ui-drawer-item-bg: var(--ui-item-bg-strong);
+  /* Table row selection (light); search/result rows use `bg-bg-card-hover`. */
+  --ui-selection-bg: var(--ui-drawer-item-bg);
+  /* White card / row hover — same elevated fill as soft buttons. */
+  --ui-bg-card-hover: var(--ui-bg-elevated);
+
+  /* Centered marketing/dashboard content column (83.75rem). Change once; use max-w-content or UContainer. */
+  --skript-content-max-width: 1400px;
+  --ui-container: var(--skript-content-max-width);
+
+  /**
+   * Brand primary — light: Cursor primary blue; solid CTAs use `--skript-primary-solid-*`.
+   */
+  --skript-primary-solid-bg: #2b78c5;
+  --skript-primary-solid-bg-hover: #256bb0;
+  --skript-primary-solid-fg: #ffffff;
+
+  --ui-primary: #2b78c5;
+  --ui-link-hover: #1e5a9a;
+  /** Top `NuxtLoadingIndicator` bar — neutral (black in light, white in dark). */
+  --skript-loading-indicator: black;
+
+  /* Nuxt UI maps semantic `primary` → `blue` (`app.config.ts`). */
+  --color-blue-50: #eff6fc;
+  --color-blue-100: #dceefb;
+  --color-blue-200: #b9ddf7;
+  --color-blue-300: #7eb8e8;
+  --color-blue-400: #4a94d4;
+  --color-blue-500: #2b78c5;
+  --color-blue-600: #256bb0;
+  --color-blue-700: #1e5a9a;
+  --color-blue-800: #184a7f;
+  --color-blue-900: #133d69;
+  --color-blue-950: #0c2847;
+  --ui-header-height: 4.3rem;
+
+  /** Sticky-header offset when scrolling to `#section` anchors (`scroll-mt-section`). */
+  --skript-section-scroll-gap: 1rem;
+  --skript-section-scroll-mt: calc(var(--ui-header-height) + var(--skript-section-scroll-gap));
+
+  --ui-text-highlighted: black;
+  --ui-text: var(--color-neutral-900);
+  --ui-text-muted: var(--color-neutral-800);
+  --ui-text-dimmed: var(--color-neutral-500);
+
+  --ui-field-focus-error-border: #cf222e;
+
+  /* Selection */
+  --color-selection-bg: rgba(208, 215, 222, 0.5);
+  --color-selection-fg: inherit;
+
+  /** Product Features category badge hues (light). Dark remaps in `.dark`. */
+  --blog-cat-product-updates-bg: #E1EEFE;
+  --blog-cat-product-updates-fg: #1677FF;
+  --blog-cat-features-bg: #EDEBFC;
+  --blog-cat-features-fg: #7C3AED;
+  --blog-cat-integrations-bg: #D5F5E8;
+  --blog-cat-integrations-fg: #059669;
+  --blog-cat-news-bg: #FFF3D6;
+  --blog-cat-news-fg: #B77900;
+  --blog-cat-mobile-bg: #FFF1E7;
+  --blog-cat-mobile-fg: #C2410C;
+  --blog-cat-security-bg: #E8EEF9;
+  --blog-cat-security-fg: #1D4ED8;
+}
+
+.dark {
+  /* 
+   ==========================================================================
+   NUXT UI DARK THEME OVERRIDES
+   ==========================================================================
+  */
+  /*
+   * Secondary copy: muted = readable secondary (zinc-400).
+   * Dimmed = quieter chrome (zinc-500) — separators, breadcrumbs ancestors, hints.
+   */
+  --ui-text-dimmed: var(--color-neutral-500);
+  --ui-text-muted: var(--color-neutral-400);
+  --ui-text-toned: var(--color-neutral-300);
+  --ui-text: var(--color-neutral-200);
+  --ui-text-highlighted: white;
+  --ui-text-inverted: var(--color-neutral-900);
+  --skript-loading-indicator: white;
+
+  /**
+   * Page canvas (`THEME_CANVAS_BG_DARK`) — achromatic black (equal RGB; not zinc
+   * blue-gray). Pairs with glass / video heroes.
+   */
+  --ui-bg: #0e0e0e;
+  /** Inset / soft fills — achromatic gray (not `--color-neutral-800` zinc). */
+  --ui-bg-muted: #1a1a1a;
+  /**
+   * Elevated surface — must be set in dark. Without this, `:root` keeps light
+   * zinc-100 and outline/soft/hover (`bg-elevated`) paint white buttons with
+   * light dark-mode text (Drafts / Preview look “invisible”).
+   */
+  --ui-bg-elevated: #1a1a1a;
+  /** Sidebars / slideovers — `bg-bg2` surface in dark (not canvas `--ui-bg`). */
+  --ui-bg-sidebar: var(--ui-bg2);
+  --ui-bg-accented: #333333;
+  --ui-bg-soft: var(--ui-bg-muted);
+  --ui-bg-subtle: var(--ui-bg-muted);
+  /**
+   * Card / panel hover lift (job cards, blog, footer band) — soft mix on canvas.
+   * Not the same as menu/list row hover (`--ui-item-bg`).
+   */
+  --ui-bg-card-hover: color-mix(in srgb, var(--ui-bg-muted) 20%, var(--ui-bg));
+  /**
+   * Pill tracks + strong inset fills — same elevated surface as card / row hover
+   * (`bg-bg-card-hover`), not full menu-row hover.
+   */
+  --ui-item-bg-strong: var(--ui-bg-card-hover);
+  /**
+   * Header / mega-menu + interactive list row hover — lighter canvas variant
+   * (tracks `--ui-bg` hue; not zinc-800).
+   */
+  --ui-nav-item-hover: color-mix(in srgb, white 7%, var(--ui-bg));
+
+  --ui-bg-inverted: white;
+
+  --ui-border: #262626;
+  --ui-border-muted: #333333;
+  --ui-border-accented: var(--ui-border);
+  /**
+   * Soft gray focus ring (Nuxt UI `ring-inverted` / `outline-inverted`) —
+   * avoid stark white; closer to Vercel-style dark field focus.
+   */
+  --ui-border-inverted: var(--color-neutral-500);
+
+  /* Legacy/Custom compatibility */
+  --ui-bg2: color-mix(in srgb, var(--ui-bg-muted) 10%, var(--ui-bg));
+  /**
+   * Same as `--ui-bg` — solid cards painted with `bg-bg-card` / `bg-elevated`
+   * vanish on the canvas. Career solid panels must use `bg-bg-card-hover`
+   * instead (see `apps/career-pages/.cursor/rules/career-pages.mdc`).
+   */
+  --ui-bg-card: var(--ui-bg);
+  /**
+   * List / menu / dropdown row hover — same canvas-lift as `--ui-nav-item-hover`
+   * (`#232325` on trial canvas). Keeps card-hover / footer on the softer mix.
+   */
+  --ui-item-bg: var(--ui-nav-item-hover);
+  --ui-drawer-item-bg: var(--ui-item-bg);
+  /* Selected rows — same as homepage job cards on hover (`bg-bg-card-hover`). */
+  --ui-selection-bg: var(--ui-bg-card-hover);
+
+  /**
+   * Brand primary — dark: Cursor periwinkle chip; solid CTAs use dark label on fill.
+   */
+  --skript-primary-solid-bg: #89a3c0;
+  --skript-primary-solid-bg-hover: #7a94b0;
+  --skript-primary-solid-fg: #141414;
+
+  --ui-link-hover: #9eb8d4;
+  --ui-primary: #89a3c0;
+
+  --color-blue-200: #4a6178;
+  --color-blue-300: #6a849c;
+  --color-blue-400: #7a94b0;
+  --color-blue-500: #89a3c0;
+  --color-blue-600: #7a94b0;
+  --color-blue-700: #6a839e;
+  --color-blue-800: #5a728a;
+  --color-blue-900: #4a6178;
+  --color-blue-950: #3a5066;
+
+  /* Field Focus - Dark Mode (aligned with --ui-border-inverted) */
+  --ui-field-focus-border: var(--color-neutral-500);
+  --ui-field-focus-ring: color-mix(in srgb, var(--color-neutral-500) 25%, transparent);
+
+  --ui-field-focus-error-border: #f85149;
+  --ui-field-focus-error-ring: rgba(248, 81, 73, 0.2);
+
+  /* Selection */
+  --color-selection-bg: rgba(110, 118, 129, 0.4);
+  --color-selection-fg: inherit;
+
+  /** Product Features category badges only — tinted dark fills (not page/card chrome). */
+  --blog-cat-product-updates-bg: #172B40;
+  --blog-cat-product-updates-fg: #60B8FF;
+  --blog-cat-features-bg: #29213F;
+  --blog-cat-features-fg: #B9A0FF;
+  --blog-cat-integrations-bg: #12352F;
+  --blog-cat-integrations-fg: #5AD9B4;
+  --blog-cat-news-bg: #382C18;
+  --blog-cat-news-fg: #F3C66D;
+  --blog-cat-mobile-bg: #3A2418;
+  --blog-cat-mobile-fg: #FB923C;
+  --blog-cat-security-bg: #1A2740;
+  --blog-cat-security-fg: #7AA2FF;
+}
+
+@layer base {
+  html {
+    @apply tracking-[-0.01rem];
+    -webkit-text-size-adjust: 100%;
+    background-color: var(--ui-bg);
+  }
+
+  button:not(:disabled):not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--ui-text-highlighted);
+  }
+
+  /* Prose Overrides for consistency */
+  :where(.prose, .prose-invert) :where(h1, h2, h3, h4, h5, h6, strong) {
+    color: var(--ui-text-highlighted);
+  }
+
+  ::selection {
+    background-color: var(--color-selection-bg);
+    color: var(--color-selection-fg);
+  }
+
+  /* @nuxt/image — logos/UI art are not copy-paste targets */
+  img[data-nuxt-img],
+  img[data-nuxt-pic] {
+    @apply select-none;
+    -webkit-user-drag: none;
+  }
+
+}
+
+/* Global scroll stability utility */
+.scroll-stable {
+  scrollbar-gutter: stable;
+}
+
+/**
+ * Role-tinted soft badge (`SharedJobCard` footer). Set `--skript-role-tone` inline
+ * (`var(--color-syntax-*)` from `u-job-role-color`). Unlayered so it beats the
+ * `UBadge` soft primary utilities; light theme darkens the Cursor accent for contrast.
+ */
+.skript-role-badge {
+  color: color-mix(in srgb, var(--skript-role-tone) 55%, black);
+  background-color: color-mix(in srgb, var(--skript-role-tone) 16%, transparent);
+}
+
+.dark .skript-role-badge {
+  color: var(--skript-role-tone);
+  background-color: color-mix(in srgb, var(--skript-role-tone) 14%, transparent);
+}
+
+@layer utilities {
+  /** Anchor scroll offset below sticky app header — use on sections with an `id`. */
+  .scroll-mt-section {
+    scroll-margin-top: var(--skript-section-scroll-mt);
+  }
+
+  /** Default vertical rhythm for `SharedSection` containers. */
+  .section-py {
+    @apply py-10 sm:py-10 lg:py-16;
+  }
+
+  /** Stacked sections: keep bottom padding, drop top (e.g. after a sibling section). */
+  .section-py-no-top {
+    @apply pb-10 sm:pb-10 lg:pt-0 lg:pb-16;
+  }
+}
+
+@layer components {
+  html.dark .grayscale-img img {
+    @apply grayscale opacity-90 hover:opacity-100;
+  }
+
+  /**
+   * Brand bullet lists — concentric primary “bullseye” (never default discs).
+   * Applies inside prose / TipTap; opt-in elsewhere with `ul.skript-bullets`.
+   * `!important` beats Nuxt UI Prose / typography utilities (`list-disc`, `ps-*`).
+   */
+  .prose ul,
+  .prose-invert ul,
+  .tiptap ul,
+  ul.skript-bullets {
+    list-style: none !important;
+    padding-inline-start: 0 !important;
+    margin-block: 1rem;
+  }
+
+  .prose ul > li,
+  .prose-invert ul > li,
+  .tiptap ul > li,
+  ul.skript-bullets > li {
+    position: relative !important;
+    /* Marker (~0.65rem) + tight gap before copy */
+    padding-inline-start: var(--skript-bullet-indent, 1.125rem) !important;
+    margin-block: 1rem !important; /* increased space between list items for readability */
+  }
+
+  .prose ol > li,
+  .prose-invert ol > li,
+  .tiptap ol > li {
+    margin-block: 1rem !important; /* increased space between list items for readability */
+  }
+
+  .prose ul > li::marker,
+  .prose-invert ul > li::marker,
+  .tiptap ul > li::marker,
+  ul.skript-bullets > li::marker {
+    content: none !important;
+    font-size: 0 !important;
+  }
+
+  .prose ul > li::before,
+  .prose-invert ul > li::before,
+  .tiptap ul > li::before,
+  ul.skript-bullets > li::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0;
+    /* Fallback: optical first-line center for ~1.75 line-height */
+    top: 0.55em;
+    /* Center on the first line box (li padding-block + half line-height − half marker) */
+    top: calc(var(--skript-bullet-pad-block, 0px) + 0.5lh - 0.325rem);
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 9999px;
+    background:
+      radial-gradient(
+        circle at center,
+        var(--ui-primary) 0 38%,
+        color-mix(in srgb, var(--ui-primary) 22%, transparent) 42% 100%
+      );
+  }
+
+  /**
+   * Job body lists (search detail + career job page) — dense rows, tight marker gap,
+   * bullseye centered on the FIRST line. Lives in `@layer components` with higher
+   * specificity than the base rules: scoped (unlayered) `!important` loses to layered
+   * `!important`, so overrides must be declared here. Nested TipTap `<p>` in `<li>`
+   * stays flush (no extra margins).
+   */
+  .job-selected-prose.prose ul > li,
+  .job-selected-prose.prose ol > li,
+  .career-job-prose.prose ul > li,
+  .career-job-prose.prose ol > li {
+    --skript-bullet-indent: 1.125rem;
+    --skript-bullet-pad-block: 0.4rem;
+    position: relative !important;
+    display: block !important;
+    margin-block: 0 !important;
+    padding-block: var(--skript-bullet-pad-block);
+    padding-inline-start: var(--skript-bullet-indent) !important;
+    white-space: normal;
+  }
+
+  .job-selected-prose.prose ul > li::before,
+  .career-job-prose.prose ul > li::before {
+    inset-inline-start: 0 !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  .job-selected-prose.prose ul > li > *,
+  .job-selected-prose.prose ol > li > *,
+  .career-job-prose.prose ul > li > *,
+  .career-job-prose.prose ol > li > * {
+    margin-block: 0 !important;
+  }
+
+  .job-selected-prose.prose ul > li > p + p,
+  .job-selected-prose.prose ol > li > p + p,
+  .career-job-prose.prose ul > li > p + p,
+  .career-job-prose.prose ol > li > p + p {
+    margin-block-start: 0.4rem !important;
+  }
+
+  /**
+   * Changelog release body — indent lists by ProseH3 icon gutter (`size-5` + `gap-2`)
+   * so bullseyes sit under the section title text. Must beat `.prose ul` above.
+   * No negative inset/margin on markers — flush to that gutter.
+   */
+  .changelog-release-prose.prose ul {
+    padding-inline-start: calc(1.25rem + 0.5rem) !important;
+  }
+
+  .changelog-release-prose.prose ul > li::before {
+    inset-inline-start: 0 !important;
+    margin-inline-start: 0 !important;
+    background:
+      radial-gradient(
+        circle at center,
+        var(--ui-primary) 0 38%,
+        color-mix(in srgb, var(--ui-primary) 22%, transparent) 42% 100%
+      ) !important;
+  }
+
+  .form-stack { @apply flex flex-col gap-6; }
+  .form-section-stack { @apply flex flex-col gap-4; }
+  .form-group { @apply flex flex-col gap-1; }
+
+  /** Hero headline — line 1 semibold, line 2 fades (Resend-style gradient clip). */
+  .marketing-hero-title {
+    /* Tight stack without colliding descenders (g/y) into line 2. */
+    line-height: 1;
+    overflow-wrap: break-word;
+  }
+
+  .marketing-hero-title__line1,
+  .marketing-hero-title__line2 {
+    display: block;
+    /* Allow wrap by default — long CTA-alt titles (product features) must wrap. */
+    white-space: normal;
+  }
+
+  /**
+   * Homepage / `SharedMarketingHeroTitle` only — short designed line1/line2
+   * segments stay on one line at xl+. Do **not** apply globally: CTA-alt
+   * heroes reuse `__line2` for the full title and nowrap + body overflow-x
+   * clip crops words (e.g. “asks for jobs” → “asks for”).
+   */
+  @media (min-width: 1280px) {
+    .marketing-hero-title > .marketing-hero-title__line1,
+    .marketing-hero-title > .marketing-hero-title__line2 {
+      white-space: nowrap;
+    }
+  }
+
+  .marketing-hero-title__line1 {
+    font-weight: 600;
+  }
+
+  /**
+   * Same idea as Resend `.effect-font-gradient`:
+   * `linear-gradient(to right bottom, white 30%, white/50)` + `background-clip: text`
+   * (https://resend.com/). Uses `--ui-text-highlighted` so light + dark both work.
+   */
+  .marketing-hero-title__line2 {
+    margin-top: 0.02em;
+    padding-bottom: 0.06em;
+    font-weight: 400;
+    color: var(--ui-text-highlighted);
+    /* Stronger fade than solid→72% (barely visible); still readable on last glyphs. */
+    background-image: linear-gradient(
+      to right bottom,
+      var(--ui-text-highlighted) 30%,
+      color-mix(in srgb, var(--ui-text-highlighted) 48%, transparent)
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
+/**
+ * Fixed h-14 dashboard chrome — sidebar header/footer + panel navbar.
+ * Outside `@layer` so `!important` wins Nuxt UI merged `h-*` utilities.
+ */
+.skript-dashboard-chrome-row {
+  box-sizing: border-box;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  column-gap: 0.375rem;
+  height: 3.5rem !important;
+  min-height: 3.5rem !important;
+  max-height: 3.5rem !important;
+  overflow: hidden;
+}
+
+/**
+ * Job search bottom row — list pagination, detail Apply, filter sidebar Dashboard/Log In.
+ * Must match {@link JOB_SEARCH_FOOTER_ROW_CLASS} in `@skriptjobs/shared/utils/u-app-shell-layout`.
+ * Declared after `.skript-dashboard-chrome-row` so merged sidebar `footer` slots win over h-14.
+ */
+.skript-job-search-footer-row {
+  box-sizing: border-box;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  column-gap: 0.375rem;
+  height: 4.5rem !important;
+  min-height: 4.5rem !important;
+  max-height: 4.5rem !important;
+  margin: 0 !important;
+  /* Kill theme py-2 only — keep Tailwind px-* for Apply / pagination inset. */
+  padding-block: 0 !important;
+  overflow: hidden;
+}
+
+/**
+ * Public-site auth CTAs: both signed-in and guest groups ship in HTML (cache-safe).
+ * A blocking head script sets `html.skript-session` from the `logged_in` cookie
+ * before first paint so "Go to Dashboard" does not wait for Firebase restore.
+ */
+html.skript-session .skript-auth-chrome-guest,
+html:not(.skript-session) .skript-auth-chrome-signed-in {
+  display: none !important;
+}
+
+/**
+ * Native scrollbars stay dark in every color-mode theme.
+ * Nuxt UI applies `scheme-light` / `dark:scheme-dark` on `body` (theme Body —
+ * https://ui.nuxt.com/docs/getting-started/theme/css-variables#body). Unlayered +
+ * after `@import "@nuxt/ui"` so this beats that utility; pairs with `scrollbar.css`.
+ * Hex literals here too — last file wins if anything redefines `--skript-scrollbar-*`.
+ *
+ * Exception: `html.skript-theme-scrollbars` (`definePageMeta({ themeScrollbars: true })`,
+ * e.g. `/search`) — restore theme-native chrome so light job-search UI is not framed
+ * by a forced dark gutter.
+ */
+html:not(.skript-theme-scrollbars),
+html:not(.skript-theme-scrollbars) body {
+  color-scheme: dark !important;
+  scrollbar-width: thin;
+  scrollbar-color: #6c6c6c #282828 !important;
+}
+
+html.skript-theme-scrollbars,
+html.skript-theme-scrollbars body {
+  color-scheme: light !important;
+  scrollbar-width: thin;
+  /* Soft zinc-200 thumb — tokens also set in `scrollbar.css` for nested scrollports. */
+  scrollbar-color: #e4e4e7 var(--ui-bg) !important;
+}
+
+html.dark.skript-theme-scrollbars,
+html.dark.skript-theme-scrollbars body {
+  color-scheme: dark !important;
+  scrollbar-color: #6c6c6c var(--ui-bg) !important;
+}
+
+/**
+ * Modal / content-search overlay — blur only (Nuxt UI default adds `bg-elevated/75`).
+ * `UContentSearch` does not forward `ui.overlay`; class is set via `ui.modal` in app.config.
+ * Mobile shell menus use their own overlay classes (excluded below).
+ */
+.skript-frosted-modal-overlay,
+[data-slot="overlay"]:not(.app-shell-mobile-menu-overlay):not(.app-header-mobile-menu-overlay) {
+  background: transparent !important;
+  background-color: transparent !important;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}

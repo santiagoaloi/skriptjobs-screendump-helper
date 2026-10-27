@@ -1,0 +1,80 @@
+name: Build & Publish Extension Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine version & package Chrome Extension (.zip)
+        id: pkg
+        run: |
+          VERSION=$(node -p "require('./extension/manifest.json').version")
+          TAG="${GITHUB_REF_NAME}"
+          if [[ ! "$TAG" =~ ^v ]]; then
+            TAG="v${VERSION}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+          mkdir -p dist
+          cd extension
+          zip -r "../dist/skriptjobs-screendump-helper-${TAG}.zip" .
+          cp "../dist/skriptjobs-screendump-helper-${TAG}.zip" "../dist/skriptjobs-screendump-helper-extension.zip"
+
+      - name: Extract release notes from CHANGELOG.md
+        id: notes
+        run: |
+          node -e '
+            const fs = require("fs");
+            const changelog = fs.readFileSync("CHANGELOG.md", "utf8");
+            const tag = process.env.TAG;
+            const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const re = new RegExp(`## \\[${escaped}\\][^\\n]*\\n([\\s\\S]*?)(?=\\n## \\[|$)`);
+            const match = changelog.match(re);
+            const body = match ? match[1].trim() : changelog.trim();
+            const header = `## Skriptjobs Screendump Helper ${tag}\n\n### 📦 Quick Download & Install\n1. Download **\`skriptjobs-screendump-helper-${tag}.zip\`** (or \`skriptjobs-screendump-helper-extension.zip\`) from **Assets** below and unzip it.\n2. Open \`chrome://extensions\` in Chrome and enable **Developer mode**.\n3. Click **Load unpacked** and select the unzipped folder.\n\n---\n\n`;
+            fs.writeFileSync("dist/RELEASE_NOTES.md", header + body + "\n");
+          '
+        env:
+          TAG: ${{ steps.pkg.outputs.tag }}
+
+      - name: Create or Update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.pkg.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" \
+              "dist/skriptjobs-screendump-helper-${TAG}.zip" \
+              "dist/skriptjobs-screendump-helper-extension.zip" \
+              --clobber
+            gh release edit "$TAG" \
+              --title "Skriptjobs Screendump Helper ${TAG}" \
+              --notes-file dist/RELEASE_NOTES.md
+          else
+            gh release create "$TAG" \
+              "dist/skriptjobs-screendump-helper-${TAG}.zip" \
+              "dist/skriptjobs-screendump-helper-extension.zip" \
+              --target "${GITHUB_SHA}" \
+              --title "Skriptjobs Screendump Helper ${TAG}" \
+              --notes-file dist/RELEASE_NOTES.md \
+              --latest
+          fi
