@@ -307,7 +307,7 @@ function onUploadWallpapers(e: Event) {
   <UApp>
     <div class="w-[460px] bg-default text-default p-3.5 flex flex-col gap-2 font-sans">
       <!-- Header: Official Skriptjobs Brand Logo + Baseline-Aligned Plain Text Title -->
-      <header class="flex items-center justify-between pb-2 border-b border-default">
+      <header class="flex items-center justify-between pb-0.5">
         <div class="flex items-center gap-2.5">
           <img :src="wordmarkSrc" alt="Skriptjobs" class="h-7 w-auto -mx-1" />
           <USeparator orientation="vertical" class="h-3.5 " />

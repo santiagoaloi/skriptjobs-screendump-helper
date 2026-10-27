@@ -639,32 +639,45 @@ btnOpenFullTabOps.addEventListener("click", openFullResolutionInNewTab);
 async function captureActiveTab() {
   await startOperationLog("captureActiveTab", {});
   if (typeof chrome !== "undefined" && chrome.tabs && chrome.tabs.query) {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab) {
-      if (tab.url && !tab.url.startsWith("chrome://")) {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const isRestrictedUrl =
+        !tab?.url ||
+        tab.url.startsWith("chrome://") ||
+        tab.url.startsWith("chrome-extension://") ||
+        tab.url.startsWith("edge://") ||
+        tab.url.startsWith("about:");
+
+      if (tab && !isRestrictedUrl) {
         initialTabUrl = tab.url;
         urlInput.value = tab.url;
+        if (tab.title) {
+          initialTabTitle = tab.title;
+          titleInput.value = tab.title;
+        }
+        await appendLogEvent("activeTab:detected", { url: urlInput.value, title: titleInput.value });
       }
-      if (tab.title) {
-        initialTabTitle = tab.title;
-        titleInput.value = tab.title;
+
+      if (!isRestrictedUrl) {
+        const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: "png" });
+        rawScreenshotImage = await loadImage(dataUrl);
+        await finishOperationLog("success", {
+          width: rawScreenshotImage.naturalWidth,
+          height: rawScreenshotImage.naturalHeight,
+        });
+        return;
       }
-      await appendLogEvent("activeTab:detected", { url: urlInput.value, title: titleInput.value });
+      await appendLogEvent("activeTab:restrictedUrlFallback", { tabUrl: tab?.url || "unknown" });
+    } catch (captureErr) {
+      await appendLogEvent("activeTab:captureFallback", { reason: captureErr?.message || String(captureErr) }, "warn");
     }
-    const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: "png" });
-    rawScreenshotImage = await loadImage(dataUrl);
-    await finishOperationLog("success", {
-      width: rawScreenshotImage.naturalWidth,
-      height: rawScreenshotImage.naturalHeight,
-    });
-    return;
   }
 
-  // Fallback for standalone preview/testing outside chrome.tabs context
+  // Fallback for restricted pages (e.g. chrome://extensions) or standalone preview
   const params = new URLSearchParams(window.location.search);
   const sampleSrc = params.get("sample") || "assets/sample-screen.png";
   rawScreenshotImage = await loadImage(sampleSrc);
-  await finishOperationLog("success", { sampleSrc });
+  await finishOperationLog("success", { sampleSrc, fallback: true });
 }
 
 // Multi-wallpaper file upload
