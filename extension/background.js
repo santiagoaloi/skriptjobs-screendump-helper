@@ -46,7 +46,7 @@ if (chrome.contextMenus?.onClicked) {
       const logsUrl = chrome.runtime.getURL('html/logs.html');
       await chrome.tabs.create({ url: logsUrl });
     } else if (info.menuItemId === 'clear-extension-logs') {
-      await chrome.storage.local.set({ extensionLogs: [] });
+      await chrome.storage.local.set({ extensionLogs: [], skriptjobs_last_operation_log: null });
     } else if (info.menuItemId === 'open-skriptjobs-repo') {
       await chrome.tabs.create({ url: REPO_URL });
     }

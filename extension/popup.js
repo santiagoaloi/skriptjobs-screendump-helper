@@ -1,6 +1,12 @@
 import { renderFramedIssueCanvas } from "./shared/frame-renderer.js";
 import { createZipBlob } from "./shared/zip-builder.js";
-import { startOperationLog, appendLogEvent, finishOperationLog } from "./shared/logger.js";
+import {
+  startOperationLog,
+  appendLogEvent,
+  finishOperationLog,
+  formatBrowserTimestamp,
+  getBrowserTimezone,
+} from "./shared/logger.js";
 
 const DEFAULT_WALLPAPER_URL = "assets/backgrounds/macos-default.png";
 const SKRIPTJOBS_LOGO_URL = "assets/brand/logo-three-triangles.svg";
@@ -52,9 +58,9 @@ const wallpaperGallery = document.getElementById("wallpaperGallery");
 const multiWallpaperInput = document.getElementById("multiWallpaperInput");
 const btnUploadWallpapers = document.getElementById("btnUploadWallpapers");
 const btnRestoreWallpapers = document.getElementById("btnRestoreWallpapers");
-const btnRestoreDefaults = document.getElementById("btnRestoreDefaults");
 const btnOpenFullTab = document.getElementById("btnOpenFullTab");
 const btnOpenFullTabOps = document.getElementById("btnOpenFullTabOps");
+const btnPinWindow = document.getElementById("btnPinWindow");
 const urlInput = document.getElementById("urlInput");
 const titleInput = document.getElementById("titleInput");
 const faviconInput = document.getElementById("faviconInput");
@@ -79,7 +85,13 @@ const themeSegmented = document.getElementById("themeSegmented");
 const syncMockupSwitch = document.getElementById("syncMockupSwitch");
 const mainAccordion = document.getElementById("mainAccordion");
 
+const urlParams = new URLSearchParams(window.location.search);
+const isPinnedWindow = urlParams.get("pinned") === "1";
+const pinnedSourceWindowId = urlParams.get("sourceWindowId") ? Number(urlParams.get("sourceWindowId")) : null;
+
 let rawScreenshotImage = null;
+let lastCapturedDataUrl = null;
+let lastCapturedTabUrl = "";
 let skriptjobsLogoImage = null;
 let wallpapersList = [];
 let selectedWallpaperId = "macos-default";
@@ -197,7 +209,7 @@ systemDarkQuery.addEventListener("change", () => {
 /**
  * Single-open collapsible accordion controller (only 1 item open at a time)
  */
-function setOpenAccordion(itemId) {
+function setOpenAccordion(itemId, persist = true) {
   const items = mainAccordion.querySelectorAll("[data-accordion-item]");
   items.forEach((section) => {
     const id = section.getAttribute("data-accordion-item");
@@ -209,14 +221,62 @@ function setOpenAccordion(itemId) {
   });
   const currentlyOpen = mainAccordion.querySelector(".u-accordion-item.open");
   activeAccordionId = currentlyOpen ? currentlyOpen.getAttribute("data-accordion-item") : "";
+  if (persist) {
+    saveSettings();
+  }
+}
+
+function forceOpenAccordion(itemId) {
+  if (!itemId) return;
+  const items = mainAccordion.querySelectorAll("[data-accordion-item]");
+  items.forEach((section) => {
+    const id = section.getAttribute("data-accordion-item");
+    section.classList.toggle("open", id === itemId);
+  });
+  activeAccordionId = itemId;
 }
 
 mainAccordion.addEventListener("click", (e) => {
   const trigger = e.target.closest("[data-accordion-trigger]");
   if (!trigger) return;
   const targetId = trigger.getAttribute("data-accordion-trigger");
-  setOpenAccordion(targetId);
+  setOpenAccordion(targetId, true);
 });
+
+if (btnPinWindow) {
+  if (isPinnedWindow) {
+    btnPinWindow.classList.add("active");
+    btnPinWindow.setAttribute("aria-pressed", "true");
+    btnPinWindow.setAttribute("data-tooltip", "Pinned floating window");
+  }
+  btnPinWindow.addEventListener("click", async () => {
+    if (isPinnedWindow) {
+      window.close();
+      return;
+    }
+    await saveSettings();
+    if (typeof chrome !== "undefined" && chrome.windows && chrome.windows.create) {
+      let currentWinId = null;
+      try {
+        const win = await chrome.windows.getCurrent();
+        currentWinId = win?.id ?? null;
+      } catch {
+        // ignore
+      }
+      const query = currentWinId ? `?pinned=1&sourceWindowId=${currentWinId}` : "?pinned=1";
+      const popupUrl = chrome.runtime.getURL(`popup.html${query}`);
+      await chrome.windows.create({
+        url: popupUrl,
+        type: "popup",
+        width: 540,
+        height: 618,
+        focused: true,
+      });
+      await appendLogEvent("window:pinFloating", { sourceWindowId: currentWinId });
+      window.close();
+    }
+  });
+}
 
 themeSegmented.addEventListener("click", async (e) => {
   const optionBtn = e.target.closest("[data-theme-value]");
@@ -316,6 +376,15 @@ async function loadSettings() {
           "selectedWallpaperId",
           "themeMode",
           "syncMockupTheme",
+          "activeAccordionId",
+          "customFaviconDataUrl",
+          "customFaviconInput",
+          "overrideUrl",
+          "overrideTitle",
+          "lastCapturedTabUrl",
+          "lastCapturedDataUrl",
+          "timestamp",
+          "timezone",
         ],
         (res) => resolve(res || {})
       );
@@ -338,6 +407,15 @@ async function saveSettings(extra = {}) {
     selectedWallpaperId,
     themeMode,
     syncMockupTheme,
+    activeAccordionId,
+    customFaviconDataUrl,
+    customFaviconInput: faviconInput ? faviconInput.value.trim() : "",
+    overrideUrl: urlInput ? urlInput.value.trim() : "",
+    overrideTitle: titleInput ? titleInput.value.trim() : "",
+    lastCapturedTabUrl,
+    lastCapturedDataUrl,
+    timestamp: formatBrowserTimestamp(),
+    timezone: getBrowserTimezone(),
     ...extra,
   };
   if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
@@ -628,20 +706,35 @@ function getSlugBaseName() {
 }
 
 /**
- * Open the full-resolution framed PNG in a new browser tab.
+ * Open the full-resolution framed PNG in a new browser tab without losing any settings.
  */
 async function openFullResolutionInNewTab() {
   try {
+    await saveSettings();
     await startOperationLog("openFullImageInNewTab", {
       url: urlInput.value.trim(),
       title: titleInput.value.trim(),
       wallpaperId: selectedWallpaperId,
     });
-    const blob = await getCanvasBlob();
-    const blobUrl = URL.createObjectURL(blob);
-    if (typeof chrome !== "undefined" && chrome.tabs && chrome.tabs.create) {
-      await chrome.tabs.create({ url: blobUrl });
+    const fullDataUrl = previewCanvas.toDataURL("image/png");
+    const previewTitle = titleInput.value.trim() || "Skriptjobs - Screendump Preview";
+
+    if (typeof chrome !== "undefined" && chrome.storage?.local && chrome.tabs?.create) {
+      await chrome.storage.local.set({
+        lastFullPreviewDataUrl: fullDataUrl,
+        lastFullPreviewTitle: previewTitle,
+        timestamp: formatBrowserTimestamp(),
+        timezone: getBrowserTimezone(),
+      });
+      const previewPageUrl = chrome.runtime.getURL("html/preview.html");
+      const createProps = { url: previewPageUrl };
+      if (isPinnedWindow && pinnedSourceWindowId) {
+        createProps.windowId = pinnedSourceWindowId;
+      }
+      await chrome.tabs.create(createProps);
     } else {
+      const blob = await getCanvasBlob();
+      const blobUrl = URL.createObjectURL(blob);
       window.open(blobUrl, "_blank", "noopener");
     }
     await finishOperationLog("success", { dimensions: dimensionsBadge.textContent });
@@ -655,48 +748,92 @@ btnOpenFullTab.addEventListener("click", openFullResolutionInNewTab);
 btnOpenFullTabOps.addEventListener("click", openFullResolutionInNewTab);
 
 /**
- * Capture the active browser tab (or load sample screen in standalone preview mode)
+ * Capture the active browser tab (or restore last captured screen when in floating window / preview tab)
  */
-async function captureActiveTab() {
-  await startOperationLog("captureActiveTab", {});
+async function captureActiveTab(saved = {}) {
+  await startOperationLog("captureActiveTab", { isPinnedWindow });
   if (typeof chrome !== "undefined" && chrome.tabs && chrome.tabs.query) {
     try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const queryOpts =
+        isPinnedWindow && pinnedSourceWindowId
+          ? { active: true, windowId: pinnedSourceWindowId }
+          : { active: true, currentWindow: true };
+      const [tab] = await chrome.tabs.query(queryOpts);
       const isRestrictedUrl =
         !tab?.url ||
         tab.url.startsWith("chrome://") ||
         tab.url.startsWith("chrome-extension://") ||
         tab.url.startsWith("edge://") ||
-        tab.url.startsWith("about:");
+        tab.url.startsWith("about:") ||
+        tab.url.startsWith("blob:");
 
       if (tab && !isRestrictedUrl) {
+        const isSameTabAsBefore = saved.lastCapturedTabUrl && saved.lastCapturedTabUrl === tab.url;
         initialTabUrl = tab.url;
-        urlInput.value = tab.url;
+        lastCapturedTabUrl = tab.url;
         if (tab.title) {
           initialTabTitle = tab.title;
-          titleInput.value = tab.title;
         }
-        await appendLogEvent("activeTab:detected", { url: urlInput.value, title: titleInput.value });
-      }
+        urlInput.value = isSameTabAsBefore && saved.overrideUrl ? saved.overrideUrl : tab.url;
+        titleInput.value =
+          isSameTabAsBefore && saved.overrideTitle ? saved.overrideTitle : tab.title || initialTabTitle;
 
-      if (!isRestrictedUrl) {
-        const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: "png" });
+        await appendLogEvent("activeTab:detected", {
+          url: urlInput.value,
+          title: titleInput.value,
+          restoredOverrides: Boolean(isSameTabAsBefore),
+        });
+
+        const captureWinId = isPinnedWindow && pinnedSourceWindowId ? pinnedSourceWindowId : null;
+        const dataUrl = await chrome.tabs.captureVisibleTab(captureWinId, { format: "png" });
+        lastCapturedDataUrl = dataUrl;
         rawScreenshotImage = await loadImage(dataUrl);
+        await saveSettings();
         await finishOperationLog("success", {
           width: rawScreenshotImage.naturalWidth,
           height: rawScreenshotImage.naturalHeight,
         });
         return;
       }
+
+      // If user opened popup while on html/preview.html, html/logs.html, or pinned window, reuse last captured screenshot & overrides
+      if (saved.lastCapturedDataUrl) {
+        lastCapturedDataUrl = saved.lastCapturedDataUrl;
+        lastCapturedTabUrl = saved.lastCapturedTabUrl || initialTabUrl;
+        if (saved.overrideUrl) urlInput.value = saved.overrideUrl;
+        if (saved.overrideTitle) titleInput.value = saved.overrideTitle;
+        rawScreenshotImage = await loadImage(saved.lastCapturedDataUrl);
+        await appendLogEvent("activeTab:restoredPreviousCapture", {
+          tabUrl: tab?.url || "restricted",
+          restoredUrl: urlInput.value,
+        });
+        await finishOperationLog("success", {
+          width: rawScreenshotImage.naturalWidth,
+          height: rawScreenshotImage.naturalHeight,
+          restoredFromSession: true,
+        });
+        return;
+      }
+
       await appendLogEvent("activeTab:restrictedUrlFallback", { tabUrl: tab?.url || "unknown" });
     } catch (captureErr) {
       await appendLogEvent("activeTab:captureFallback", { reason: captureErr?.message || String(captureErr) }, "warn");
+      if (saved.lastCapturedDataUrl) {
+        lastCapturedDataUrl = saved.lastCapturedDataUrl;
+        lastCapturedTabUrl = saved.lastCapturedTabUrl || initialTabUrl;
+        if (saved.overrideUrl) urlInput.value = saved.overrideUrl;
+        if (saved.overrideTitle) titleInput.value = saved.overrideTitle;
+        rawScreenshotImage = await loadImage(saved.lastCapturedDataUrl);
+        await finishOperationLog("success", { restoredFromSession: true });
+        return;
+      }
     }
   }
 
-  // Fallback for restricted pages (e.g. chrome://extensions) or standalone preview
-  const params = new URLSearchParams(window.location.search);
-  const sampleSrc = params.get("sample") || "assets/sample-viewport.png";
+  // Fallback for restricted pages or standalone preview
+  if (saved.overrideUrl) urlInput.value = saved.overrideUrl;
+  if (saved.overrideTitle) titleInput.value = saved.overrideTitle;
+  const sampleSrc = urlParams.get("sample") || "assets/sample-viewport.png";
   rawScreenshotImage = await loadImage(sampleSrc);
   await finishOperationLog("success", { sampleSrc, fallback: true });
 }
@@ -740,9 +877,10 @@ multiWallpaperInput.addEventListener("change", async (e) => {
   multiWallpaperInput.value = "";
 });
 
-// Debounced live re-render when Override Mockup URL or Override Tab Title changes
-const debouncedRedrawPreview = debounce(() => {
-  redrawPreview();
+// Debounced live re-render + state persistence when Override Mockup URL or Override Tab Title changes
+const debouncedRedrawPreview = debounce(async () => {
+  await saveSettings();
+  await redrawPreview();
 }, 280);
 
 urlInput.addEventListener("input", debouncedRedrawPreview);
@@ -770,6 +908,7 @@ const debouncedFaviconChange = debounce(async () => {
     customFaviconDataUrl = await resolveFaviconToDataUrl(raw);
   }
   updateFaviconPreviewBadge();
+  await saveSettings();
   await redrawPreview();
   await appendLogEvent("output:overrideFavicon", { hasCustomFavicon: Boolean(customFaviconDataUrl) });
 }, 280);
@@ -794,6 +933,7 @@ if (btnUploadFavicon && faviconFileInput) {
     customFaviconDataUrl = await resolveFaviconToDataUrl(String(dataUrl));
     faviconInput.value = file.name;
     updateFaviconPreviewBadge();
+    await saveSettings();
     await redrawPreview();
     await appendLogEvent("output:uploadFavicon", { fileName: file.name });
     faviconFileInput.value = "";
@@ -805,6 +945,7 @@ if (btnResetFavicon) {
     customFaviconDataUrl = null;
     if (faviconInput) faviconInput.value = "";
     updateFaviconPreviewBadge();
+    await saveSettings();
     await redrawPreview();
     await appendLogEvent("output:resetFavicon", {});
   });
@@ -913,7 +1054,6 @@ btnDownloadThemeZip.addEventListener("click", async () => {
       files: [lightFilename, darkFilename],
       sizeBytes: zipBlob.size,
     });
-
   } catch (err) {
     await finishOperationLog("error", { message: err.message });
     setStatus(`ZIP export failed: ${err.message}`, "error");
@@ -999,7 +1139,25 @@ btnUploadBlob.addEventListener("click", async () => {
     if (saved.defaultWallpaperId && wallpapersList.some((w) => w.id === saved.defaultWallpaperId)) {
       defaultWallpaperId = saved.defaultWallpaperId;
     }
-    selectedWallpaperId = defaultWallpaperId;
+    if (saved.selectedWallpaperId && wallpapersList.some((w) => w.id === saved.selectedWallpaperId)) {
+      selectedWallpaperId = saved.selectedWallpaperId;
+    } else {
+      selectedWallpaperId = defaultWallpaperId;
+    }
+
+    // Restore custom favicon override if saved
+    if (saved.customFaviconDataUrl) {
+      customFaviconDataUrl = saved.customFaviconDataUrl;
+      if (faviconInput && saved.customFaviconInput) {
+        faviconInput.value = saved.customFaviconInput;
+      }
+      updateFaviconPreviewBadge();
+    }
+
+    // Restore last open accordion section
+    if (saved.activeAccordionId && ["wallpapers", "operations", "output", "settings"].includes(saved.activeAccordionId)) {
+      forceOpenAccordion(saved.activeAccordionId);
+    }
 
     // Apply saved Sync Browser Mockup Theme preference (defaults to true)
     const initialSyncMockup = typeof saved.syncMockupTheme === "boolean" ? saved.syncMockupTheme : true;
@@ -1011,7 +1169,7 @@ btnUploadBlob.addEventListener("click", async () => {
 
     renderWallpaperGallery();
     skriptjobsLogoImage = await loadImage(SKRIPTJOBS_LOGO_URL);
-    await captureActiveTab();
+    await captureActiveTab(saved);
     await redrawPreview();
   } catch (err) {
     setStatus(`Init error: ${err.message}`, "error");

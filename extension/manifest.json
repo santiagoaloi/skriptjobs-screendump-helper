@@ -47,8 +47,10 @@
       "resources": [
         "assets/backgrounds/*.png",
         "assets/icons/*.png",
+        "assets/fonts/*.woff2",
         "shared/frame-renderer.js",
-        "html/logs.html"
+        "html/logs.html",
+        "html/preview.html"
       ],
       "matches": ["<all_urls>"]
     }
