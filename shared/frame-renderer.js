@@ -436,3 +436,49 @@ export async function renderFramedScreenshotToCanvas({
   ctx.restore();
   return canvas;
 }
+
+/**
+ * High-level helper used by popup.js and Vue components.
+ * Accepts either { screenshotImage, wallpaperImage, pageUrl, pageTitle }
+ * or { viewportImage, backgroundImage, url, title } and returns { width, height, canvas }.
+ */
+export async function renderFramedIssueCanvas({
+  canvas,
+  screenshotImage,
+  viewportImage,
+  wallpaperImage,
+  backgroundImage,
+  pageUrl,
+  url,
+  pageTitle,
+  title,
+  faviconDataUrl = null,
+  marginMode = 'reference',
+  fitReferenceSize = true,
+  viewportCssWidth = null,
+  mockupTheme = 'dark',
+}) {
+  const shot = screenshotImage || viewportImage;
+  const bg = wallpaperImage || backgroundImage || null;
+  const resolvedUrl = pageUrl ?? url ?? 'https://docs.skriptjobs.localhost:3050/getting-started/installation';
+  const resolvedTitle = pageTitle ?? title ?? 'Installation - Skriptjobs';
+
+  await renderFramedScreenshotToCanvas({
+    canvas,
+    viewportImage: shot,
+    backgroundImage: bg,
+    url: resolvedUrl,
+    title: resolvedTitle,
+    faviconDataUrl,
+    marginMode,
+    fitReferenceSize,
+    viewportCssWidth,
+    mockupTheme,
+  });
+
+  return {
+    width: canvas.width,
+    height: canvas.height,
+    canvas,
+  };
+}

@@ -2,8 +2,8 @@ import { renderFramedIssueCanvas } from "./shared/frame-renderer.js";
 import { createZipBlob } from "./shared/zip-builder.js";
 import { startOperationLog, appendLogEvent, finishOperationLog } from "./shared/logger.js";
 
-const DEFAULT_WALLPAPER_URL = "assets/default-wallpaper.jpg";
-const SKRIPTJOBS_LOGO_URL = "assets/brand/logo-color.svg";
+const DEFAULT_WALLPAPER_URL = "assets/backgrounds/macos-default.png";
+const SKRIPTJOBS_LOGO_URL = "assets/brand/logo-three-triangles.svg";
 const WORDMARK_DARK_URL = "assets/brand/wordmark-dark.svg";
 const WORDMARK_LIGHT_URL = "assets/brand/wordmark-light.svg";
 
@@ -16,28 +16,28 @@ const BUILTIN_WALLPAPERS = [
     id: "macos-default",
     name: "macOS Default",
     type: "image",
-    src: DEFAULT_WALLPAPER_URL,
+    src: "assets/backgrounds/macos-default.png",
     builtin: true,
   },
   {
     id: "skriptjobs-indigo",
     name: "Skriptjobs Indigo",
-    type: "gradient",
-    colors: ["#1e1b4b", "#312e81", "#4c1d95"],
+    type: "image",
+    src: "assets/backgrounds/skriptjobs-indigo.png",
     builtin: true,
   },
   {
     id: "nordic-teal",
     name: "Nordic Teal",
-    type: "gradient",
-    colors: ["#042f2e", "#115e59", "#0f172a"],
+    type: "image",
+    src: "assets/backgrounds/nordic-teal.png",
     builtin: true,
   },
   {
     id: "midnight-slate",
     name: "Midnight Slate",
-    type: "gradient",
-    colors: ["#09090b", "#18181b", "#27272a"],
+    type: "image",
+    src: "assets/backgrounds/midnight-slate.png",
     builtin: true,
   },
 ];
@@ -675,7 +675,7 @@ async function captureActiveTab() {
 
   // Fallback for restricted pages (e.g. chrome://extensions) or standalone preview
   const params = new URLSearchParams(window.location.search);
-  const sampleSrc = params.get("sample") || "assets/sample-screen.png";
+  const sampleSrc = params.get("sample") || "assets/sample-viewport.png";
   rawScreenshotImage = await loadImage(sampleSrc);
   await finishOperationLog("success", { sampleSrc, fallback: true });
 }
@@ -907,9 +907,16 @@ btnUploadBlob.addEventListener("click", async () => {
       blobTokenInput.value = saved.blobReadWriteToken;
     }
 
-    // Load saved wallpaper list or fall back to built-ins + customWallpapers
+    // Load saved wallpaper list (healing any legacy built-in paths) or fall back to built-ins + customWallpapers
+    const builtinMap = new Map(BUILTIN_WALLPAPERS.map((b) => [b.id, b]));
     if (Array.isArray(saved.wallpapersState) && saved.wallpapersState.length > 0) {
-      wallpapersList = saved.wallpapersState;
+      wallpapersList = saved.wallpapersState.map((w) => {
+        if (w.builtin && builtinMap.has(w.id)) {
+          const ref = builtinMap.get(w.id);
+          return { ...ref, name: w.name || ref.name };
+        }
+        return w;
+      });
     } else {
       const custom = Array.isArray(saved.customWallpapers) ? saved.customWallpapers : [];
       wallpapersList = [...cloneBuiltinWallpapers(), ...custom];
