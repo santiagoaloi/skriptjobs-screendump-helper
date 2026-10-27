@@ -23,7 +23,7 @@ Grab the ready-to-install Chrome Extension package from [**GitHub Releases (`lat
 - **macOS Chrome Dark-Theme Mockup (`1711 × 1076 px`):** Minimal Chrome frame showing only the traffic lights, active tab with the Skriptjobs three-triangles favicon, and pill URL bar with the Skriptjobs three-triangles badge over your selected wallpaper.
 - **Hover-to-Inspect Live Preview:** Live `<canvas>` preview in the extension popup with a hover-only top-right button to open the full-resolution PNG in a new tab.
 - **Multi-Wallpaper Gallery:** Ships with 4 built-in presets (**macOS Default**, **Skriptjobs Indigo**, **Nordic Teal**, **Midnight Slate**) plus custom multi-file wallpaper uploads and a top-right star toggle for the default background.
-- **Single-Open Collapsible Accordion:** Built with `@nuxt/ui` and `@skriptjobs/ui` dark theme tokens (`Wallpapers`, `Image Operations`, and `Settings`), with icon-only actions for **Upload to Vercel Blob & Copy Markdown**, **Copy PNG**, and **Download PNG**.
+- **Single-Open Collapsible Accordion:** Built with `@nuxt/ui` and `@skriptjobs/ui` dark theme tokens (`Wallpapers`, `Image Operations`, `Output`, and `Settings`, with `System` / `Dark` / `Light` theme sync), with icon-only actions for **Upload to Vercel Blob & Copy Markdown**, **Copy PNG**, and **Download PNG**.
 
 ---
 

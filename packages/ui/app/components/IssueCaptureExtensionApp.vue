@@ -13,12 +13,15 @@ export interface WallpaperOption {
   builtin: boolean
 }
 
+export type ThemePreference = 'system' | 'dark' | 'light'
+
 const props = defineProps<{
   initialWallpapers: WallpaperOption[]
   initialDefaultId?: string
   initialViewportSrc: string
   initialUrl?: string
   initialTitle?: string
+  initialTheme?: ThemePreference
 }>()
 
 const wallpapers = ref<WallpaperOption[]>([...props.initialWallpapers])
@@ -28,6 +31,7 @@ const displayedUrl = ref<string>(
   props.initialUrl || 'https://docs.skriptjobs.localhost:3050/getting-started/installation'
 )
 const displayedTitle = ref<string>(props.initialTitle || 'Installation - Skriptjobs')
+const themeMode = ref<ThemePreference>(props.initialTheme || 'system')
 const blobToken = ref<string>('')
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const statusMessage = ref<string>('')
@@ -49,11 +53,23 @@ const accordionItems = [
     slot: 'operations' as const,
   },
   {
+    label: 'Output',
+    icon: 'i-ph-sliders-horizontal-duotone',
+    value: 'output',
+    slot: 'output' as const,
+  },
+  {
     label: 'Settings',
     icon: 'i-ph-gear-six-duotone',
     value: 'settings',
     slot: 'settings' as const,
   },
+]
+
+const themeOptions: { label: string; value: ThemePreference; icon: string }[] = [
+  { label: 'System', value: 'system', icon: 'i-ph-desktop' },
+  { label: 'Dark', value: 'dark', icon: 'i-ph-moon' },
+  { label: 'Light', value: 'light', icon: 'i-ph-sun' },
 ]
 
 const activeWallpaper = computed(
@@ -109,13 +125,16 @@ function removeWallpaper(id: string) {
 </script>
 
 <template>
-  <div class="dark min-h-screen bg-bg1 text-text-default p-4 flex flex-col gap-3.5">
+  <div
+    :class="themeMode === 'light' ? 'light' : 'dark'"
+    class="bg-bg1 text-text-default p-3.5 flex flex-col gap-2.5"
+  >
     <!-- Header Row: Skriptjobs wordmark + harmonic "Screendump Helper" plain text -->
-    <div class="flex items-center border-b border-default pb-3">
+    <div class="flex items-center border-b border-default pb-2.5">
       <div class="flex items-center gap-2">
-        <SkriptjobsLogo class="h-[30px] w-auto -ml-1" />
+        <SkriptjobsLogo class="h-7 w-auto -ml-1" />
         <span class="h-4 w-px bg-border-muted mr-1" />
-        <span class="text-[15.5px] font-medium tracking-tight text-muted leading-none">
+        <span class="text-[15px] font-medium tracking-tight text-muted leading-none">
           Screendump Helper
         </span>
       </div>
@@ -145,7 +164,7 @@ function removeWallpaper(id: string) {
       </div>
     </div>
 
-    <!-- Single-open Collapsible Accordion (Wallpapers | Image Operations | Settings) -->
+    <!-- Single-open Collapsible Accordion (Wallpapers | Image Operations | Output | Settings) -->
     <UAccordion
       v-model="openSection"
       type="single"
@@ -155,7 +174,7 @@ function removeWallpaper(id: string) {
     >
       <!-- Section 1: Wallpapers -->
       <template #wallpapers>
-        <div class="p-3 pt-1 flex flex-col gap-2.5">
+        <div class="p-3 pt-1 flex flex-col gap-2">
           <div class="flex items-center justify-between">
             <span class="text-xs text-muted">Select background or set default</span>
             <div>
@@ -181,11 +200,11 @@ function removeWallpaper(id: string) {
             </div>
           </div>
 
-          <div class="grid grid-cols-2 gap-2">
+          <div class="grid grid-cols-2 gap-1.5">
             <div
               v-for="wp in wallpapers"
               :key="wp.id"
-              class="group relative flex items-center gap-2.5 rounded-md border p-1.5 pr-7 transition cursor-pointer"
+              class="group relative flex items-center gap-2 rounded-md border p-1.5 pr-6 transition cursor-pointer"
               :class="
                 selectedWallpaperId === wp.id
                   ? 'border-[var(--ui-primary)] bg-bg-card-hover'
@@ -196,7 +215,7 @@ function removeWallpaper(id: string) {
               <img
                 :src="wp.src"
                 :alt="wp.name"
-                class="h-8 w-12 shrink-0 rounded object-cover border border-default"
+                class="h-7 w-11 shrink-0 rounded object-cover border border-default"
               />
               <div class="min-w-0 flex-1">
                 <div class="truncate text-xs font-medium text-highlighted">{{ wp.name }}</div>
@@ -288,10 +307,10 @@ function removeWallpaper(id: string) {
         </div>
       </template>
 
-      <!-- Section 3: Settings (Omnibox URL, Tab Title, Vercel Blob Token) -->
-      <template #settings>
-        <div class="p-3 pt-1 flex flex-col gap-2.5">
-          <UFormField label="Displayed URL (Chrome Omnibox)" size="xs">
+      <!-- Section 3: Output (Override Mockup URL & Override Tab Title) -->
+      <template #output>
+        <div class="p-3 pt-1 flex flex-col gap-2">
+          <UFormField label="Override Mockup URL" hint="auto-detected" size="xs">
             <UInput
               v-model="displayedUrl"
               icon="i-ph-link-simple"
@@ -300,21 +319,42 @@ function removeWallpaper(id: string) {
             />
           </UFormField>
 
-          <div class="grid grid-cols-2 gap-2.5">
-            <UFormField label="Active Tab Title" size="xs">
-              <UInput v-model="displayedTitle" icon="i-ph-app-window" size="sm" class="w-full" />
-            </UFormField>
-            <UFormField label="Vercel Blob Token" size="xs">
-              <UInput
-                v-model="blobToken"
-                type="password"
-                icon="i-ph-key"
-                placeholder="BLOB_READ_WRITE_TOKEN"
-                size="sm"
-                class="w-full font-mono"
-              />
-            </UFormField>
-          </div>
+          <UFormField label="Override Tab Title" hint="auto-detected" size="xs">
+            <UInput v-model="displayedTitle" icon="i-ph-app-window" size="sm" class="w-full" />
+          </UFormField>
+        </div>
+      </template>
+
+      <!-- Section 4: Settings (Theme Sync & Vercel Blob Token) -->
+      <template #settings>
+        <div class="p-3 pt-1 flex flex-col gap-2.5">
+          <UFormField label="Theme" size="xs">
+            <div class="grid grid-cols-3 gap-1 rounded-md border border-default bg-bg1 p-0.5">
+              <UButton
+                v-for="opt in themeOptions"
+                :key="opt.value"
+                size="xs"
+                :color="themeMode === opt.value ? 'neutral' : 'neutral'"
+                :variant="themeMode === opt.value ? 'soft' : 'ghost'"
+                :icon="opt.icon"
+                class="justify-center"
+                @click="themeMode = opt.value"
+              >
+                {{ opt.label }}
+              </UButton>
+            </div>
+          </UFormField>
+
+          <UFormField label="Vercel Blob Token" size="xs">
+            <UInput
+              v-model="blobToken"
+              type="password"
+              icon="i-ph-key"
+              placeholder="BLOB_READ_WRITE_TOKEN"
+              size="sm"
+              class="w-full font-mono"
+            />
+          </UFormField>
         </div>
       </template>
     </UAccordion>
