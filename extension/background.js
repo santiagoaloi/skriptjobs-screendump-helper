@@ -58,8 +58,8 @@ let refocusTimer = null;
 
 async function enforcePinnedWindowStayOnTop() {
   try {
-    const data = await chrome.storage.local.get(['stayOnTop', 'pinnedWindowId']);
-    if (!data?.stayOnTop || !data?.pinnedWindowId) return;
+    const data = await chrome.storage.local.get(['stayOnTop', 'pinnedWindowId', 'isDraggingPreview']);
+    if (!data?.stayOnTop || !data?.pinnedWindowId || data?.isDraggingPreview) return;
     const winId = Number(data.pinnedWindowId);
     if (!winId) return;
     await chrome.windows.update(winId, { focused: true });
@@ -71,8 +71,8 @@ async function enforcePinnedWindowStayOnTop() {
 
 if (chrome.windows?.onFocusChanged) {
   chrome.windows.onFocusChanged.addListener(async (focusedWindowId) => {
-    const data = await chrome.storage.local.get(['stayOnTop', 'pinnedWindowId']);
-    if (!data?.stayOnTop || !data?.pinnedWindowId) return;
+    const data = await chrome.storage.local.get(['stayOnTop', 'pinnedWindowId', 'isDraggingPreview']);
+    if (!data?.stayOnTop || !data?.pinnedWindowId || data?.isDraggingPreview) return;
     const pinnedWinId = Number(data.pinnedWindowId);
     if (focusedWindowId === pinnedWinId) return;
 

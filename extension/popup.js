@@ -53,6 +53,7 @@ function cloneBuiltinWallpapers() {
 }
 
 const previewCanvas = document.getElementById("previewCanvas");
+const previewDragImage = document.getElementById("previewDragImage");
 const dimensionsBadge = document.getElementById("dimensionsBadge");
 const wallpaperGallery = document.getElementById("wallpaperGallery");
 const multiWallpaperInput = document.getElementById("multiWallpaperInput");
@@ -111,6 +112,11 @@ let customUrlOverride = "";
 let customTitleOverride = "";
 let customFaviconDataUrl = null;
 let currentUndoHandler = null;
+let isDraggingPreview = false;
+let currentPreviewDataUrl = "";
+let currentPreviewFsUrl = "";
+let currentPreviewFilename = "skriptjobs-screenshot-framed.png";
+let currentPreviewBlob = null;
 
 const imageCache = new Map();
 const systemDarkQuery = window.matchMedia("(prefers-color-scheme: dark)");
@@ -262,7 +268,7 @@ function updatePinButtonUI() {
 }
 
 async function keepPinnedWindowOnTop() {
-  if (!isPinnedWindow || !stayOnTop) return;
+  if (!isPinnedWindow || !stayOnTop || isDraggingPreview) return;
   try {
     if (!pinnedSelfWindowId && typeof chrome !== "undefined" && chrome.windows?.getCurrent) {
       const win = await chrome.windows.getCurrent();
@@ -733,6 +739,130 @@ async function restoreDefaultWallpapers() {
 
 btnRestoreWallpapers.addEventListener("click", restoreDefaultWallpapers);
 
+function writeBlobToExtensionFileSystem(blob, filename) {
+  return new Promise((resolve) => {
+    const reqFs = window.webkitRequestFileSystem || window.requestFileSystem;
+    if (typeof reqFs !== "function") {
+      resolve("");
+      return;
+    }
+    const writeNewEntry = (fsRoot) => {
+      fsRoot.getFile(
+        filename,
+        { create: true },
+        (fileEntry) => {
+          fileEntry.createWriter(
+            (writer) => {
+              writer.onwriteend = () => resolve(fileEntry.toURL());
+              writer.onerror = () => resolve("");
+              writer.write(blob);
+            },
+            () => resolve("")
+          );
+        },
+        () => resolve("")
+      );
+    };
+    reqFs(
+      window.TEMPORARY,
+      32 * 1024 * 1024,
+      (fs) => {
+        fs.root.getFile(
+          filename,
+          { create: false },
+          (existingEntry) => {
+            existingEntry.remove(
+              () => writeNewEntry(fs.root),
+              () => writeNewEntry(fs.root)
+            );
+          },
+          () => writeNewEntry(fs.root)
+        );
+      },
+      () => resolve("")
+    );
+  });
+}
+
+async function syncDraggablePreviewImage() {
+  try {
+    const filename = `${getSlugBaseName()}-framed.png`;
+    const dataUrl = previewCanvas.toDataURL("image/png");
+    const blob = await getCanvasBlob(previewCanvas);
+    const fsUrl = await writeBlobToExtensionFileSystem(blob, filename);
+
+    currentPreviewFilename = filename;
+    currentPreviewDataUrl = dataUrl;
+    currentPreviewBlob = blob;
+    currentPreviewFsUrl = fsUrl || "";
+
+    if (previewDragImage) {
+      previewDragImage.src = currentPreviewFsUrl || dataUrl;
+      previewDragImage.dataset.filename = filename;
+      previewDragImage.dataset.downloadUrl = currentPreviewFsUrl || dataUrl;
+      previewDragImage.classList.add("ready");
+      previewCanvas.classList.add("hidden-by-drag-img");
+    }
+
+    if (typeof chrome !== "undefined" && chrome.storage?.local) {
+      await chrome.storage.local.set({
+        lastFullPreviewDataUrl: dataUrl,
+        lastFullPreviewFsUrl: currentPreviewFsUrl,
+        lastFullPreviewFilename: filename,
+        lastFullPreviewTitle: titleInput.value.trim() || "Skriptjobs - Screendump Preview",
+        timestamp: formatBrowserTimestamp(),
+        timezone: getBrowserTimezone(),
+      });
+    }
+  } catch {
+    // Fallback to visible canvas if image sync fails
+  }
+}
+
+function handlePreviewDragStart(e) {
+  if (!e.dataTransfer) return;
+  isDraggingPreview = true;
+  if (typeof chrome !== "undefined" && chrome.storage?.local) {
+    chrome.storage.local.set({ isDraggingPreview: true });
+  }
+  const filename = currentPreviewFilename || `${getSlugBaseName()}-framed.png`;
+  const downloadTargetUrl =
+    currentPreviewFsUrl || currentPreviewDataUrl || previewCanvas.toDataURL("image/png");
+
+  e.dataTransfer.effectAllowed = "copyMove";
+  e.dataTransfer.setData("DownloadURL", `image/png:${filename}:${downloadTargetUrl}`);
+  e.dataTransfer.setData("text/uri-list", downloadTargetUrl);
+  e.dataTransfer.setData("text/plain", downloadTargetUrl);
+
+  appendLogEvent("preview:dragStart", {
+    filename,
+    hasFileSystemUrl: Boolean(currentPreviewFsUrl),
+  });
+}
+
+function handlePreviewDragEnd() {
+  setTimeout(() => {
+    isDraggingPreview = false;
+    if (typeof chrome !== "undefined" && chrome.storage?.local) {
+      chrome.storage.local.set({ isDraggingPreview: false });
+    }
+    if (isPinnedWindow && stayOnTop) {
+      keepPinnedWindowOnTop();
+    }
+  }, 300);
+  appendLogEvent("preview:dragEnd", { filename: currentPreviewFilename });
+}
+
+if (previewDragImage) {
+  previewDragImage.addEventListener("dragstart", handlePreviewDragStart);
+  previewDragImage.addEventListener("dragend", handlePreviewDragEnd);
+}
+if (previewCanvas) {
+  previewCanvas.setAttribute("draggable", "true");
+  previewCanvas.addEventListener("dragstart", handlePreviewDragStart);
+  previewCanvas.addEventListener("dragend", handlePreviewDragEnd);
+}
+
 async function redrawPreview() {
   if (!rawScreenshotImage) return;
   const activeWp =
@@ -753,6 +883,7 @@ async function redrawPreview() {
     mockupTheme,
   });
   dimensionsBadge.textContent = `${dims.width} × ${dims.height} px`;
+  await syncDraggablePreviewImage();
 }
 
 function getCanvasBlob(canvas = previewCanvas) {

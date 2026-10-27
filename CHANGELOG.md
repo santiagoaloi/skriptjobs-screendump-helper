@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ## [v1.1.0] - 2026-10-27
 
 ### Added
+- **Drag-and-Drop Mockup Preview (`#previewDragImage`)**:
+  - Drag the rendered mockup directly from the Preview card onto the macOS Desktop or any Finder folder to save the full-resolution PNG (`skriptjobs-<slug>-framed.png`), or drag it onto a browser tab to open and view/save the full image.
 - **Stay-on-Top Floating Window (`#btnPinWindow`)**:
   - Header pin button (**Keep extension open on top**) opens a dedicated floating extension window anchored at the top-right of the browser and persists `stayOnTop` state in `chrome.storage.local`.
   - Automatic blur-recovery (`window.blur` and `chrome.windows.onFocusChanged`) immediately re-focuses the pinned window so it stays on top of the browser window when clicking into the page or opening the full-resolution preview in a new tab.

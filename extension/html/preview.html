@@ -25,11 +25,16 @@
       border-radius: 8px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
       display: block;
+      cursor: grab;
+      -webkit-user-drag: element;
+    }
+    img:active {
+      cursor: grabbing;
     }
   </style>
 </head>
 <body>
-  <img id="fullPreviewImg" alt="Skriptjobs Framed Screenshot" />
+  <img id="fullPreviewImg" draggable="true" alt="Skriptjobs Framed Screenshot" />
   <script src="preview.js"></script>
 </body>
 </html>

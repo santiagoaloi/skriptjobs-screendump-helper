@@ -212,6 +212,27 @@
       border-radius: 6px;
       display: block;
     }
+    canvas#previewCanvas.hidden-by-drag-img {
+      display: none;
+    }
+    img#previewDragImage {
+      max-width: 100%;
+      max-height: 112px;
+      width: auto;
+      height: auto;
+      border-radius: 6px;
+      display: none;
+      cursor: grab;
+      -webkit-user-drag: element;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    img#previewDragImage.ready {
+      display: block;
+    }
+    img#previewDragImage:active {
+      cursor: grabbing;
+    }
     .preview-open-tab-btn {
       position: absolute;
       top: 14px;
@@ -922,6 +943,12 @@
     </div>
     <div class="mockup-preview-wrap">
       <canvas id="previewCanvas" width="1711" height="1076"></canvas>
+      <img
+        id="previewDragImage"
+        draggable="true"
+        alt="Skriptjobs Framed Screenshot"
+        title="Drag to Desktop/Finder to save PNG, or drag to a browser tab to view"
+      />
       <button
         id="btnOpenFullTab"
         type="button"
