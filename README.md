@@ -14,7 +14,7 @@ Grab the ready-to-install Chrome Extension package from [**GitHub Releases (`lat
 
 - **Latest Release:** [`v1.0.0`](https://github.com/santiagoaloi/skriptjobs-screendump-helper/releases/tag/v1.0.0)
 - **Downloadable Asset:** `skriptjobs-screendump-helper-v1.0.0.zip` / `skriptjobs-screendump-helper-extension.zip`
-- **Release Notes:** Full changelog-style notes in [`CHANGELOG.md`](./CHANGELOG.md) (automatically published on every release via [`.github/workflows/release.yml`](./.github/workflows/release.yml)).
+- **Release Notes:** Full changelog-style notes in [`CHANGELOG.md`](./CHANGELOG.md) (published via `npm run release` / [`cli/release.mjs`](./cli/release.mjs)).
 
 ---
 

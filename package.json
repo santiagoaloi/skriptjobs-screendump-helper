@@ -5,5 +5,8 @@
   "description": "macOS Chrome dark-plum mockup framer & Chrome Extension for Skriptjobs GitHub issue screenshots",
   "bin": {
     "frame-screenshot": "./cli/frame-screenshot.mjs"
+  },
+  "scripts": {
+    "release": "node ./cli/release.mjs"
   }
 }
