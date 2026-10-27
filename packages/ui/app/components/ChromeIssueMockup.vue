@@ -1,9 +1,7 @@
 <script setup lang="ts">
 /**
- * Reusable macOS Chrome dark-plum issue screenshot mockup component for @skriptjobs/ui.
- * Renders the exact replica window (traffic lights, active tab with Skriptjobs three-triangles
- * favicon, clean pill URL bar starting with the Skriptjobs three-triangles badge, and no right-side
- * toolbar or Ask Gemini clutter) over the selected wallpaper.
+ * Reusable macOS Chrome issue screenshot mockup component for @skriptjobs/ui.
+ * Supports both dark and light Chrome themes synced to the active theme.
  */
 import { ref, watch, onMounted } from 'vue'
 import {
@@ -19,6 +17,7 @@ const props = withDefaults(
     title?: string
     marginMode?: 'reference' | 'symmetric'
     fitReferenceSize?: boolean
+    mockupTheme?: 'dark' | 'light'
   }>(),
   {
     wallpaperSrc: '/assets/backgrounds/macos-default.png',
@@ -26,6 +25,7 @@ const props = withDefaults(
     title: 'Installation - Skriptjobs',
     marginMode: 'reference',
     fitReferenceSize: false,
+    mockupTheme: 'dark',
   }
 )
 
@@ -59,12 +59,20 @@ async function draw() {
     title: props.title,
     marginMode: props.marginMode,
     fitReferenceSize: props.fitReferenceSize,
+    mockupTheme: props.mockupTheme,
   })
   emit('rendered', canvasRef.value)
 }
 
 watch(
-  () => [props.viewportSrc, props.wallpaperSrc, props.url, props.title, props.marginMode],
+  () => [
+    props.viewportSrc,
+    props.wallpaperSrc,
+    props.url,
+    props.title,
+    props.marginMode,
+    props.mockupTheme,
+  ],
   draw
 )
 onMounted(draw)

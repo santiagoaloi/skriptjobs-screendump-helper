@@ -1,18 +1,72 @@
 /**
- * Shared macOS Chrome Dark-Plum Mockup Renderer (@skriptjobs/ui compatible)
+ * Shared macOS Chrome Mockup Renderer (Dark & Light Themes, @skriptjobs/ui compatible)
  *
- * Measured pixel-for-pixel from Santiago's reference screenshot (1711 x 1076):
+ * Measured pixel-for-pixel from Santiago's reference screenshots:
  * - Top margin: 36px, Bottom margin: 62px, Left margin: 60px, Right margin: 86px (or 60px symmetric)
  * - Window corner radius: 12px
- * - Outer border: 1px #585a5f highlight + 1px #393344 inner rim
  * - Drop shadow: 0px X-offset, +20px Y-offset, sigma=16px (34px blur), 0.62 opacity
- * - Tab bar: 39px height (#231c2f), traffic lights (#ff5f57, #febc2e, #28c840),
- *   active tab (#3f384d) with Skriptjobs three-triangles favicon + title + close 'x', and '+' button (NO Ask Gemini)
- * - URL bar row: 46px height (#3f384d), full-width pill omnibox (#292335, 34px tall, rx=17)
+ * - Tab bar: 39px height, traffic lights (#ff5f57, #febc2e, #28c840),
+ *   active tab with Skriptjobs three-triangles favicon + title + close 'x', and '+' button (NO Ask Gemini)
+ * - URL bar row: 46px height, full-width pill omnibox (34px tall, rx=17)
  *   with circular Skriptjobs three-triangles logo badge at the start of the URL bar + full URL
  *   (NO back/forward/refresh, NO right toolbar icons)
- * - Bottom header divider: 1px solid #48444e
+ * - Bottom header divider: 1px solid
  */
+
+export const CHROME_MOCKUP_THEMES = {
+  dark: {
+    borderOuter: '#585a5f',
+    borderInner: '#393344',
+    viewportFallbackBg: '#3f384d',
+    header: {
+      tabBarHeight: 39,
+      toolbarHeight: 46,
+      dividerHeight: 1,
+      totalHeight: 86,
+      tabBarBg: '#231c2f',
+      toolbarBg: '#3f384d',
+      omniboxBg: '#292335',
+      dividerColor: '#48444e',
+      tabText: '#e6e0ee',
+      tabClose: '#b8b0c4',
+      newTabPlus: '#b8adc5',
+      urlScheme: '#9e95ad',
+      urlHost: '#f3eef8',
+      urlPath: '#b8b0c8',
+      omniboxBadgeBg: '#3f384d',
+      omniboxLogoFill: '#f3eef8',
+      faviconTileFill: '#141318',
+      faviconTileStroke: '#524963',
+      faviconLogoFill: '#ffffff',
+    },
+  },
+  light: {
+    borderOuter: '#f1e8fa',
+    borderInner: '#d8cde2',
+    viewportFallbackBg: '#fef7ff',
+    header: {
+      tabBarHeight: 39,
+      toolbarHeight: 46,
+      dividerHeight: 1,
+      totalHeight: 86,
+      tabBarBg: '#eadef7',
+      toolbarBg: '#fef7ff',
+      omniboxBg: '#ede7f2',
+      dividerColor: '#e7e0eb',
+      tabText: '#1d1b20',
+      tabClose: '#49454f',
+      newTabPlus: '#49454f',
+      urlScheme: '#675e70',
+      urlHost: '#1d1b20',
+      urlPath: '#49454f',
+      omniboxBadgeBg: '#fef7ff',
+      omniboxLogoFill: '#1d1b20',
+      faviconTileFill: '#141318',
+      faviconTileStroke: '#d0cad5',
+      faviconLogoFill: '#ffffff',
+    },
+  },
+};
 
 export const CHROME_MOCKUP_THEME = {
   referenceCanvas: { width: 1711, height: 1076 },
@@ -22,8 +76,8 @@ export const CHROME_MOCKUP_THEME = {
     symmetric: { top: 36, bottom: 62, left: 60, right: 60 },
   },
   windowRadius: 12,
-  borderOuter: '#585a5f',
-  borderInner: '#393344',
+  borderOuter: CHROME_MOCKUP_THEMES.dark.borderOuter,
+  borderInner: CHROME_MOCKUP_THEMES.dark.borderInner,
   shadow: {
     offsetX: 0,
     offsetY: 20,
@@ -31,22 +85,7 @@ export const CHROME_MOCKUP_THEME = {
     blurCss: 34,
     alpha: 0.62,
   },
-  header: {
-    tabBarHeight: 39,
-    toolbarHeight: 46,
-    dividerHeight: 1,
-    totalHeight: 86, // 39 + 46 + 1
-    tabBarBg: '#231c2f',
-    toolbarBg: '#3f384d',
-    omniboxBg: '#292335',
-    dividerColor: '#48444e',
-    tabText: '#e6e0ee',
-    tabClose: '#b8b0c4',
-    newTabPlus: '#b8adc5',
-    urlScheme: '#9e95ad',
-    urlHost: '#f3eef8',
-    urlPath: '#b8b0c8',
-  },
+  header: CHROME_MOCKUP_THEMES.dark.header,
   trafficLights: [
     { cx: 20, cy: 20.5, r: 6, fill: '#ff5f57', stroke: '#e0443e' },
     { cx: 43, cy: 20.5, r: 6, fill: '#febc2e', stroke: '#dfa023' },
@@ -66,7 +105,6 @@ export function buildSkriptjobsTrianglesSvgGroup({
   tileFill = '#141318',
   tileStroke = '#4d455e',
 }) {
-  const scale = size / 32;
   const tileMarkup = withDarkTile
     ? `<rect x="${x}" y="${y}" width="${size}" height="${size}" rx="${(size * 0.22).toFixed(2)}" fill="${tileFill}" stroke="${tileStroke}" stroke-width="0.6" />`
     : '';
@@ -112,23 +150,23 @@ export function escapeXml(unsafe) {
 
 /**
  * Build the crisp vector SVG for the simplified macOS Chrome header (width x 86px).
- * Includes:
- * - Row 1 (39px, #231c2f): macOS traffic lights, active tab (#3f384d) with Skriptjobs three-triangles favicon + title + close 'x', and '+' button. No Ask Gemini.
- * - Row 2 (46px, #3f384d): Clean pill URL bar (#292335) showing circular Skriptjobs three-triangles logo badge at the start + full URL. No back/forward/refresh, no right toolbar icons.
- * - Row 3 (1px, #48444e): Bottom divider line.
  */
 export function buildChromeHeaderSvg({
   windowWidth = 1565,
   title = 'Installation - Skriptjobs',
   url = 'https://docs.skriptjobs.localhost:3050/getting-started/installation',
   faviconDataUrl = null,
+  mockupTheme = 'dark',
 }) {
   const T = CHROME_MOCKUP_THEME;
-  const H = T.header.totalHeight; // 86
-  const tabBarH = T.header.tabBarHeight; // 39
-  const toolbarH = T.header.toolbarHeight; // 46
+  const palette =
+    mockupTheme === 'light' ? CHROME_MOCKUP_THEMES.light : CHROME_MOCKUP_THEMES.dark;
+  const Hdr = palette.header;
+  const H = Hdr.totalHeight; // 86
+  const tabBarH = Hdr.tabBarHeight; // 39
+  const toolbarH = Hdr.toolbarHeight; // 46
 
-  // Active tab geometry (matches x=153..420 in ref image -> offset 93..360 from window left)
+  // Active tab geometry
   const tabX = 93;
   const tabY = 6;
   const tabW = 267;
@@ -142,7 +180,7 @@ export function buildChromeHeaderSvg({
   const plusCx = tabX + tabW + 20; // 380
   const plusCy = tabY + tabH / 2; // 22.5
 
-  // Omnibox geometry: clean full-width pill without left nav buttons or right extension buttons
+  // Omnibox geometry
   const omniX = 14;
   const omniY = tabBarH + 6; // 45
   const omniW = windowWidth - 28;
@@ -151,20 +189,20 @@ export function buildChromeHeaderSvg({
 
   const { scheme, host, path } = splitUrlParts(url);
 
-  // Active Tab Favicon: Skriptjobs three-triangles favicon tile (or custom faviconDataUrl if explicitly passed)
+  // Active Tab Favicon
   const tabFaviconMarkup = faviconDataUrl
     ? `<image href="${escapeXml(faviconDataUrl)}" x="${tabX + 14}" y="${tabY + 8.5}" width="16" height="16" />`
     : buildSkriptjobsTrianglesSvgGroup({
         x: tabX + 14,
         y: tabY + 8.5,
         size: 16,
-        fill: '#ffffff',
+        fill: Hdr.faviconLogoFill,
         withDarkTile: true,
-        tileFill: '#141318',
-        tileStroke: '#524963',
+        tileFill: Hdr.faviconTileFill,
+        tileStroke: Hdr.faviconTileStroke,
       });
 
-  // Omnibox Start Badge: Circular badge at (omniX + 17, omniY + 17) with the Skriptjobs three-triangles mark inside
+  // Omnibox Start Badge
   const badgeCx = omniX + 17;
   const badgeCy = omniY + 17;
   const badgeLogoSize = 16.5;
@@ -172,7 +210,7 @@ export function buildChromeHeaderSvg({
     x: badgeCx - badgeLogoSize / 2,
     y: badgeCy - badgeLogoSize / 2 - 0.3,
     size: badgeLogoSize,
-    fill: '#f3eef8',
+    fill: Hdr.omniboxLogoFill,
     withDarkTile: false,
   });
 
@@ -187,10 +225,10 @@ export function buildChromeHeaderSvg({
   </defs>
 
   <!-- Row 1: Tab Bar Background -->
-  <rect x="0" y="0" width="${windowWidth}" height="${tabBarH}" fill="${T.header.tabBarBg}" />
+  <rect x="0" y="0" width="${windowWidth}" height="${tabBarH}" fill="${Hdr.tabBarBg}" />
 
   <!-- Row 2: Toolbar Background -->
-  <rect x="0" y="${tabBarH}" width="${windowWidth}" height="${toolbarH}" fill="${T.header.toolbarBg}" />
+  <rect x="0" y="${tabBarH}" width="${windowWidth}" height="${toolbarH}" fill="${Hdr.toolbarBg}" />
 
   <!-- macOS Traffic Lights -->
   ${T.trafficLights
@@ -211,47 +249,48 @@ export function buildChromeHeaderSvg({
     L ${tabX + tabW} ${tabBarH - scoopR}
     A ${scoopR} ${scoopR} 0 0 0 ${tabX + tabW + scoopR} ${tabBarH}
     Z
-  " fill="${T.header.toolbarBg}" />
+  " fill="${Hdr.toolbarBg}" />
 
   <!-- Active Tab Favicon (Skriptjobs Three-Triangles Favicon) -->
   ${tabFaviconMarkup}
 
   <!-- Active Tab Title -->
   <g clip-path="url(#tabTitleClip)">
-    <text x="${tabX + 38}" y="${tabY + 21}" fill="${T.header.tabText}" font-family="'Geist', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', sans-serif" font-size="12.5" font-weight="500">${escapeXml(displayTitle)}</text>
+    <text x="${tabX + 38}" y="${tabY + 21}" fill="${Hdr.tabText}" font-family="'Geist', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', sans-serif" font-size="12.5" font-weight="500">${escapeXml(displayTitle)}</text>
   </g>
 
   <!-- Active Tab Close 'x' -->
-  <g transform="translate(${tabX + tabW - 22}, ${tabY + 16.5})" stroke="${T.header.tabClose}" stroke-width="1.5" stroke-linecap="round">
+  <g transform="translate(${tabX + tabW - 22}, ${tabY + 16.5})" stroke="${Hdr.tabClose}" stroke-width="1.5" stroke-linecap="round">
     <line x1="-3.5" y1="-3.5" x2="3.5" y2="3.5" />
     <line x1="3.5" y1="-3.5" x2="-3.5" y2="3.5" />
   </g>
 
   <!-- New Tab '+' Button -->
-  <g transform="translate(${plusCx}, ${plusCy})" stroke="${T.header.newTabPlus}" stroke-width="1.7" stroke-linecap="round">
+  <g transform="translate(${plusCx}, ${plusCy})" stroke="${Hdr.newTabPlus}" stroke-width="1.7" stroke-linecap="round">
     <line x1="-5" y1="0" x2="5" y2="0" />
     <line x1="0" y1="-5" x2="0" y2="5" />
   </g>
 
-  <!-- Row 2: Full-width Pill URL Omnibox (stripped of nav & right toolbar clutter) -->
-  <rect x="${omniX}" y="${omniY}" width="${omniW}" height="${omniH}" rx="${omniR}" ry="${omniR}" fill="${T.header.omniboxBg}" />
+  <!-- Row 2: Full-width Pill URL Omnibox -->
+  <rect x="${omniX}" y="${omniY}" width="${omniW}" height="${omniH}" rx="${omniR}" ry="${omniR}" fill="${Hdr.omniboxBg}" />
 
   <!-- Omnibox Left Badge Circle + Official Skriptjobs Three-Triangles Mark -->
-  <circle cx="${badgeCx}" cy="${badgeCy}" r="12" fill="${T.header.toolbarBg}" />
+  <circle cx="${badgeCx}" cy="${badgeCy}" r="12" fill="${Hdr.omniboxBadgeBg}" />
   ${omniboxBadgeLogoMarkup}
 
   <!-- Omnibox URL Text (scheme + host + path) -->
   <g clip-path="url(#omniTextClip)">
-    <text x="${omniX + 38}" y="${omniY + 22}" font-family="'Geist', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', sans-serif" font-size="13.5" font-weight="400" xml:space="preserve"><tspan fill="${T.header.urlScheme}">${escapeXml(scheme)}</tspan><tspan fill="${T.header.urlHost}" font-weight="500">${escapeXml(host)}</tspan><tspan fill="${T.header.urlPath}">${escapeXml(path)}</tspan></text>
+    <text x="${omniX + 38}" y="${omniY + 22}" font-family="'Geist', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter', 'Segoe UI', sans-serif" font-size="13.5" font-weight="400" xml:space="preserve"><tspan fill="${Hdr.urlScheme}">${escapeXml(scheme)}</tspan><tspan fill="${Hdr.urlHost}" font-weight="500">${escapeXml(host)}</tspan><tspan fill="${Hdr.urlPath}">${escapeXml(path)}</tspan></text>
   </g>
 
   <!-- Bottom 1px Divider Line -->
-  <rect x="0" y="${H - 1}" width="${windowWidth}" height="1" fill="${T.header.dividerColor}" />
+  <rect x="0" y="${H - 1}" width="${windowWidth}" height="1" fill="${Hdr.dividerColor}" />
 </svg>`;
 }
 
 /**
  * Browser Canvas 2D renderer (used by the Chrome Extension popup, content script, & Vue component).
+ * Preloads the SVG header image before modifying the target canvas so redraws never flash.
  */
 export async function renderFramedScreenshotToCanvas({
   canvas,
@@ -263,8 +302,11 @@ export async function renderFramedScreenshotToCanvas({
   marginMode = 'reference',
   fitReferenceSize = false,
   viewportCssWidth = null,
+  mockupTheme = 'dark',
 }) {
   const T = CHROME_MOCKUP_THEME;
+  const palette =
+    mockupTheme === 'light' ? CHROME_MOCKUP_THEMES.light : CHROME_MOCKUP_THEMES.dark;
   const margins = T.margins[marginMode] || T.margins.reference;
 
   // Never stretch or deform the screenshot: always preserve the exact aspect ratio of viewportImage.
@@ -273,14 +315,40 @@ export async function renderFramedScreenshotToCanvas({
     : (viewportCssWidth || viewportImage.width);
   const vpH = Math.round(viewportImage.height * (vpW / viewportImage.width));
   const winW = vpW + 4;
-  const winH = T.header.totalHeight + vpH + 4;
+  const winH = palette.header.totalHeight + vpH + 4;
 
   const totalW = winW + margins.left + margins.right;
   const totalH = winH + margins.top + margins.bottom;
 
-  canvas.width = totalW;
-  canvas.height = totalH;
+  // Preload Header SVG image BEFORE touching the target canvas so there is zero flicker/flashing
+  const headerSvg = buildChromeHeaderSvg({
+    windowWidth: winW - 4,
+    title,
+    url,
+    faviconDataUrl,
+    mockupTheme,
+  });
+  const svgBlob = new Blob([headerSvg], { type: 'image/svg+xml;charset=utf-8' });
+  const svgUrl = URL.createObjectURL(svgBlob);
+  let headerImg;
+  try {
+    headerImg = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = svgUrl;
+    });
+  } finally {
+    URL.revokeObjectURL(svgUrl);
+  }
+
+  // Only resize canvas when dimensions actually change (avoids unnecessary buffer reallocation)
+  if (canvas.width !== totalW || canvas.height !== totalH) {
+    canvas.width = totalW;
+    canvas.height = totalH;
+  }
   const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, totalW, totalH);
 
   // 1. Draw Background Wallpaper (cover)
   if (backgroundImage) {
@@ -329,17 +397,17 @@ export async function renderFramedScreenshotToCanvas({
   ctx.shadowOffsetX = T.shadow.offsetX;
   ctx.shadowOffsetY = T.shadow.offsetY;
   traceRoundedRect(winX, winY, winW, winH, r);
-  ctx.fillStyle = T.borderOuter;
+  ctx.fillStyle = palette.borderOuter;
   ctx.fill();
   ctx.restore();
 
-  // 3. Draw Outer 1px Highlight Rim (#585a5f) and Inner 1px Dark Rim (#393344)
+  // 3. Draw Outer 1px Highlight Rim and Inner 1px Rim
   traceRoundedRect(winX, winY, winW, winH, r);
-  ctx.fillStyle = T.borderOuter;
+  ctx.fillStyle = palette.borderOuter;
   ctx.fill();
 
   traceRoundedRect(winX + 1, winY + 1, winW - 2, winH - 2, r - 1);
-  ctx.fillStyle = T.borderInner;
+  ctx.fillStyle = palette.borderInner;
   ctx.fill();
 
   // 4. Clip to Inner Window Surface (winX+2, winY+2, winW-4, winH-4)
@@ -347,30 +415,12 @@ export async function renderFramedScreenshotToCanvas({
   traceRoundedRect(winX + 2, winY + 2, winW - 4, winH - 4, r - 2);
   ctx.clip();
 
-  // 5. Render Header SVG onto inner top
-  const headerSvg = buildChromeHeaderSvg({
-    windowWidth: winW - 4,
-    title,
-    url,
-    faviconDataUrl,
-  });
-  const svgBlob = new Blob([headerSvg], { type: 'image/svg+xml;charset=utf-8' });
-  const svgUrl = URL.createObjectURL(svgBlob);
-  try {
-    const headerImg = await new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = svgUrl;
-    });
-    ctx.drawImage(headerImg, winX + 2, winY + 2, winW - 4, T.header.totalHeight);
-  } finally {
-    URL.revokeObjectURL(svgUrl);
-  }
+  // 5. Render preloaded Header SVG onto inner top
+  ctx.drawImage(headerImg, winX + 2, winY + 2, winW - 4, palette.header.totalHeight);
 
   // 6. Draw Viewport Image below header
-  ctx.fillStyle = '#3f384d';
-  ctx.fillRect(winX + 2, winY + 2 + T.header.totalHeight, vpW, vpH);
+  ctx.fillStyle = palette.viewportFallbackBg;
+  ctx.fillRect(winX + 2, winY + 2 + palette.header.totalHeight, vpW, vpH);
   ctx.drawImage(
     viewportImage,
     0,
@@ -378,7 +428,7 @@ export async function renderFramedScreenshotToCanvas({
     viewportImage.width,
     viewportImage.height,
     winX + 2,
-    winY + 2 + T.header.totalHeight,
+    winY + 2 + palette.header.totalHeight,
     vpW,
     vpH
   );

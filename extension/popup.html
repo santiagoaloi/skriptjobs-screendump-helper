@@ -2,13 +2,13 @@
 <html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <title>Skriptjobs Screendump Helper</title>
+  <title>Skriptjobs - Screendump Helper</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     /* ==========================================================================
-       @skriptjobs/ui + @nuxt/ui v4 Design System Tokens (Light & Dark)
+       @skriptjobs/ui + @nuxt/ui v4 Design System Tokens (Neutral Light & Dark)
        ========================================================================== */
     :root, html.light {
       color-scheme: light;
@@ -20,27 +20,22 @@
       --ui-bg-muted: #f4f4f5;
       --ui-bg-elevated: #ffffff;
       --ui-bg-accented: #e4e4e7;
-      --ui-bg-inverted: #09090b;
+      --ui-bg-inverted: #18181b;
       --ui-bg-card-hover: #f4f4f5;
-      --ui-header-surface: rgba(244, 244, 245, 0.7);
+      --ui-header-surface: rgba(244, 244, 245, 0.75);
       --ui-preview-stage: #f0f0f3;
 
-      /* Borders (--ui-border*) */
+      /* Neutral Borders (--ui-border*) */
       --ui-border: #e4e4e7;
       --ui-border-muted: #d4d4d8;
       --ui-border-accented: #a1a1aa;
+      --ui-border-focus: #71717a;
 
       /* Typography (--ui-text*) */
       --ui-text-highlighted: #09090b;
       --ui-text: #18181b;
       --ui-text-muted: #52525b;
       --ui-text-dimmed: #71717a;
-
-      /* Brand & Primary CTA (--skript-primary-solid-*) */
-      --ui-primary: #2b78c5;
-      --skript-primary-solid-bg: #2b78c5;
-      --skript-primary-solid-bg-hover: #256bb0;
-      --skript-primary-solid-fg: #ffffff;
 
       /* Scrollbar tokens */
       --scrollbar-track: #f4f4f5;
@@ -58,27 +53,22 @@
       --ui-bg-muted: #1a1a1a;
       --ui-bg-elevated: #141414;
       --ui-bg-accented: #262626;
-      --ui-bg-inverted: #ffffff;
+      --ui-bg-inverted: #f4f4f5;
       --ui-bg-card-hover: #1c1c1c;
       --ui-header-surface: rgba(26, 26, 26, 0.55);
       --ui-preview-stage: #080808;
 
-      /* Borders (--ui-border*) */
+      /* Neutral Borders (--ui-border*) */
       --ui-border: #262626;
       --ui-border-muted: #333333;
-      --ui-border-accented: #3f3f46;
+      --ui-border-accented: #52525b;
+      --ui-border-focus: #71717a;
 
       /* Typography (--ui-text*) */
       --ui-text-highlighted: #ffffff;
       --ui-text: #e4e4e7;
       --ui-text-muted: #a1a1aa;
       --ui-text-dimmed: #71717a;
-
-      /* Brand & Primary CTA (--skript-primary-solid-*) */
-      --ui-primary: #89a3c0;
-      --skript-primary-solid-bg: #89a3c0;
-      --skript-primary-solid-bg-hover: #7a94b0;
-      --skript-primary-solid-fg: #141414;
 
       /* Scrollbar tokens */
       --scrollbar-track: #141414;
@@ -183,7 +173,7 @@
       gap: 7px;
     }
 
-    /* Live Mockup Preview Container (<ChromeIssueMockup />) with top-right Open in Tab button */
+    /* Live Mockup Preview Container (<ChromeIssueMockup />) with theme-aware top-right Open in Tab button */
     .mockup-preview-wrap {
       position: relative;
       background: var(--ui-preview-stage);
@@ -201,7 +191,7 @@
       height: auto;
       border-radius: 6px;
       display: block;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     }
     .preview-open-tab-btn {
       position: absolute;
@@ -210,16 +200,14 @@
       width: 28px;
       height: 28px;
       border-radius: 6px;
-      background: rgba(14, 14, 14, 0.78);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      color: #f4f4f5;
+      background: var(--ui-bg-elevated);
+      border: 1px solid var(--ui-border-muted);
+      color: var(--ui-text-highlighted);
       display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.15s ease, transform 0.14s ease, background 0.14s ease, border-color 0.14s ease;
@@ -232,9 +220,9 @@
       pointer-events: auto;
     }
     .preview-open-tab-btn:hover {
-      background: rgba(20, 20, 20, 0.94);
-      border-color: var(--ui-primary);
-      color: #ffffff;
+      background: var(--ui-bg-accented);
+      border-color: var(--ui-border-accented);
+      color: var(--ui-text-highlighted);
       transform: scale(1.04);
     }
 
@@ -280,14 +268,18 @@
     .u-accordion-icon {
       width: 14px;
       height: 14px;
-      color: var(--ui-primary);
+      color: var(--ui-text-muted);
       flex-shrink: 0;
+      transition: color 0.14s ease;
+    }
+    .u-accordion-item.open .u-accordion-icon {
+      color: var(--ui-text-highlighted);
     }
     .u-accordion-chevron {
       width: 14px;
       height: 14px;
       color: var(--ui-text-muted);
-      transition: transform 0.18s ease;
+      transition: transform 0.18s ease, color 0.18s ease;
       flex-shrink: 0;
     }
     .u-accordion-item.open .u-accordion-chevron {
@@ -297,6 +289,7 @@
     .u-accordion-body {
       display: none;
       padding: 2px 12px 10px 12px;
+      overflow: visible;
     }
     .u-accordion-item.open .u-accordion-body {
       display: block;
@@ -314,23 +307,25 @@
       color: var(--ui-text-muted);
     }
 
-    /* Multi-Wallpaper Gallery Grid (no hardcoded height or forced scrollbar) */
+    /* Multi-Wallpaper Gallery Grid (no hardcoded height or scrollbar) */
     .wallpaper-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 6px;
+      overflow: visible;
     }
     .wp-item {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 5px 24px 5px 5px;
+      padding: 5px 44px 5px 5px;
       border-radius: 7px;
       border: 1px solid var(--ui-border);
       background: var(--ui-bg);
       cursor: pointer;
       transition: all 0.14s ease;
       position: relative;
+      overflow: visible;
     }
     .wp-item:hover,
     .wp-item.force-hover {
@@ -338,9 +333,9 @@
       border-color: var(--ui-border-muted);
     }
     .wp-item.active {
-      border-color: var(--ui-primary);
-      background: color-mix(in srgb, var(--ui-primary) 10%, var(--ui-bg));
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ui-primary) 28%, transparent);
+      border-color: var(--ui-border-accented);
+      background: var(--ui-bg-muted);
+      box-shadow: inset 0 0 0 1px var(--ui-border-muted);
     }
     .wp-thumb {
       width: 44px;
@@ -364,55 +359,110 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .wp-rename-input {
+      width: 100%;
+      background: var(--ui-bg-elevated);
+      border: 1px solid var(--ui-border-accented);
+      border-radius: 4px;
+      padding: 2px 5px;
+      font-family: var(--font-sans);
+      font-size: 11px;
+      color: var(--ui-text-highlighted);
+      outline: none;
+    }
 
-    /* Top-right Star Icon (Fixed on default wallpaper, shown on hover for others) */
+    /* Right actions on Wallpaper card: Default star badge + 3-dots menu button */
     .wp-corner-actions {
       position: absolute;
-      top: 5px;
+      top: 50%;
       right: 5px;
+      transform: translateY(-50%);
       display: flex;
       align-items: center;
       gap: 2px;
     }
-    .wp-star-btn,
-    .wp-del-btn {
+    .wp-default-indicator {
+      width: 18px;
+      height: 18px;
+      color: var(--ui-text-highlighted);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.85;
+    }
+    .wp-menu-btn {
       appearance: none;
-      width: 20px;
-      height: 20px;
-      border-radius: 4px;
-      border: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      border: 1px solid transparent;
       background: transparent;
       color: var(--ui-text-muted);
       display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      opacity: 0;
-      transition: opacity 0.14s ease, color 0.14s ease, background 0.14s ease;
+      transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
     }
-    .wp-star-btn.is-default {
-      opacity: 1;
-      color: var(--ui-primary);
-    }
-    .wp-item:hover .wp-star-btn,
-    .wp-item.force-hover .wp-star-btn,
-    .wp-item:hover .wp-del-btn,
-    .wp-item.force-hover .wp-del-btn {
-      opacity: 1;
-    }
-    .wp-star-btn:hover {
-      background: color-mix(in srgb, var(--ui-primary) 16%, transparent);
-      color: var(--ui-primary);
-    }
-    .wp-del-btn {
-      color: #ef4444;
-    }
-    .wp-del-btn:hover {
-      background: rgba(239, 68, 68, 0.15);
-      color: #dc2626;
+    .wp-menu-btn:hover,
+    .wp-menu-btn.active {
+      background: var(--ui-bg-accented);
+      border-color: var(--ui-border-muted);
+      color: var(--ui-text-highlighted);
     }
 
-    /* Nuxt UI UButton + Icon-only Square Buttons + UTooltip */
+    /* 3-Dots Dropdown Menu on Wallpaper Card */
+    .wp-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      right: 0;
+      min-width: 152px;
+      background: var(--ui-bg-elevated);
+      border: 1px solid var(--ui-border-muted);
+      border-radius: 7px;
+      padding: 4px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24);
+      z-index: 60;
+      display: none;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .wp-dropdown.open {
+      display: flex;
+    }
+    .wp-dropdown-item {
+      appearance: none;
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: var(--ui-text);
+      font-family: var(--font-sans);
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 5.5px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      text-align: left;
+      transition: background 0.12s ease, color 0.12s ease;
+    }
+    .wp-dropdown-item:hover {
+      background: var(--ui-bg-muted);
+      color: var(--ui-text-highlighted);
+    }
+    .wp-dropdown-item svg {
+      width: 13px;
+      height: 13px;
+      color: var(--ui-text-muted);
+      flex-shrink: 0;
+    }
+    .wp-dropdown-item:hover svg {
+      color: var(--ui-text-highlighted);
+    }
+
+    /* Neutral Buttons + Icon-only Square Buttons + UTooltip */
     .u-btn {
       appearance: none;
       border-radius: 6px;
@@ -443,23 +493,16 @@
       border-radius: 6px;
       flex-shrink: 0;
     }
-    .u-btn-soft {
+    .u-btn-soft,
+    .u-btn-neutral {
       background: var(--ui-bg-muted);
       border: 1px solid var(--ui-border-muted);
       color: var(--ui-text-highlighted);
     }
-    .u-btn-soft:hover {
+    .u-btn-soft:hover,
+    .u-btn-neutral:hover {
       background: var(--ui-bg-accented);
       border-color: var(--ui-border-accented);
-    }
-    .u-btn-primary-solid {
-      background: var(--skript-primary-solid-bg);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: var(--skript-primary-solid-fg);
-      font-weight: 600;
-    }
-    .u-btn-primary-solid:hover {
-      background: var(--skript-primary-solid-bg-hover);
     }
 
     /* @nuxt/ui UTooltip styling */
@@ -481,7 +524,7 @@
       padding: 4px 8px;
       border-radius: 5px;
       white-space: nowrap;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.14s ease, transform 0.14s ease;
@@ -522,6 +565,7 @@
     }
     .u-ops-flex {
       flex: 1;
+      font-weight: 600;
     }
 
     /* Output & Settings Form Stacks */
@@ -530,11 +574,6 @@
       flex-direction: column;
       gap: 8px;
       padding-top: 2px;
-    }
-    .u-form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
     }
     .u-form-field {
       display: flex;
@@ -569,6 +608,7 @@
       color: var(--ui-text-dimmed);
       pointer-events: none;
     }
+    /* Neutral border input fields (no primary blue border) */
     .u-input {
       width: 100%;
       background: var(--ui-bg);
@@ -585,12 +625,15 @@
       font-family: var(--font-mono);
       font-size: 11px;
     }
+    .u-input:hover {
+      border-color: var(--ui-border-accented);
+    }
     .u-input:focus {
-      border-color: var(--ui-primary);
-      box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-primary) 22%, transparent);
+      border-color: var(--ui-border-focus);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-text-muted) 16%, transparent);
     }
 
-    /* Segmented Theme Control (System | Dark | Light) */
+    /* Segmented Theme Control (System | Dark | Light) — Neutral */
     .u-theme-segmented {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -602,7 +645,7 @@
     }
     .u-theme-option {
       appearance: none;
-      border: none;
+      border: 1px solid transparent;
       background: transparent;
       color: var(--ui-text-muted);
       font-family: var(--font-sans);
@@ -619,11 +662,13 @@
     }
     .u-theme-option:hover {
       color: var(--ui-text-highlighted);
+      background: var(--ui-bg-card-hover);
     }
     .u-theme-option.active {
       background: var(--ui-bg-muted);
+      border-color: var(--ui-border-muted);
       color: var(--ui-text-highlighted);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
       font-weight: 600;
     }
     .u-theme-option svg {
@@ -632,16 +677,73 @@
       flex-shrink: 0;
     }
 
-    /* Status Toast Bar */
+    /* Neutral Switch Row (Sync Browser Mockup Theme) */
+    .u-switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      background: var(--ui-bg);
+      border: 1px solid var(--ui-border-muted);
+    }
+    .u-switch-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .u-switch-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ui-text-highlighted);
+    }
+    .u-switch-sub {
+      font-size: 10px;
+      color: var(--ui-text-muted);
+    }
+    .u-switch {
+      appearance: none;
+      width: 34px;
+      height: 19px;
+      border-radius: 9999px;
+      background: var(--ui-bg-accented);
+      border: 1px solid var(--ui-border-muted);
+      position: relative;
+      cursor: pointer;
+      transition: background 0.16s ease, border-color 0.16s ease;
+      flex-shrink: 0;
+    }
+    .u-switch::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 13px;
+      height: 13px;
+      border-radius: 9999px;
+      background: var(--ui-text-muted);
+      transition: transform 0.16s ease, background 0.16s ease;
+    }
+    .u-switch[aria-checked="true"] {
+      background: var(--ui-text-highlighted);
+      border-color: var(--ui-text-highlighted);
+    }
+    .u-switch[aria-checked="true"]::after {
+      transform: translateX(15px);
+      background: var(--ui-bg-elevated);
+    }
+
+    /* Status Toast Bar with Close Icon */
     .u-status {
       font-size: 11px;
-      padding: 6px 10px;
+      padding: 6px 8px 6px 10px;
       border-radius: 6px;
       background: var(--ui-bg-muted);
-      border: 1px solid var(--ui-border);
-      color: var(--ui-text-muted);
+      border: 1px solid var(--ui-border-muted);
+      color: var(--ui-text);
       display: none;
-      word-break: break-all;
+      word-break: break-word;
     }
     .u-status.visible {
       display: flex;
@@ -652,7 +754,7 @@
     .u-status.success {
       border-color: rgba(40, 200, 64, 0.35);
       background: rgba(40, 200, 64, 0.1);
-      color: #22c55e;
+      color: #16a34a;
     }
     html.dark .u-status.success {
       color: #86efac;
@@ -660,10 +762,30 @@
     .u-status.error {
       border-color: rgba(248, 113, 113, 0.35);
       background: rgba(248, 113, 113, 0.1);
-      color: #ef4444;
+      color: #dc2626;
     }
     html.dark .u-status.error {
       color: #fca5a5;
+    }
+    .u-status-close {
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: none;
+      background: transparent;
+      color: currentColor;
+      opacity: 0.7;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: opacity 0.12s ease, background 0.12s ease;
+    }
+    .u-status-close:hover {
+      opacity: 1;
+      background: rgba(128, 128, 128, 0.16);
     }
   </style>
 </head>
@@ -721,7 +843,7 @@
       </button>
       <div class="u-accordion-body">
         <div class="wp-toolbar">
-          <span class="wp-toolbar-label">Select background or set default</span>
+          <span class="wp-toolbar-label">Select background or open menu</span>
           <div>
             <input id="multiWallpaperInput" type="file" multiple accept="image/*" style="display:none" />
             <button
@@ -781,7 +903,7 @@
           <button
             id="btnUploadBlob"
             type="button"
-            class="u-btn u-btn-primary-solid u-ops-flex tooltip-right"
+            class="u-btn u-btn-neutral u-ops-flex tooltip-right"
             data-tooltip="Upload to Vercel Blob &amp; copy Markdown"
           >
             <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor">
@@ -793,7 +915,7 @@
       </div>
     </section>
 
-    <!-- Accordion Item 3: Output (Override Mockup URL & Override Tab Title) -->
+    <!-- Accordion Item 3: Output (Debounced Override Mockup URL & Override Tab Title) -->
     <section class="u-accordion-item" data-accordion-item="output">
       <button type="button" class="u-accordion-trigger" data-accordion-trigger="output">
         <span class="u-accordion-trigger-left">
@@ -811,7 +933,7 @@
           <div class="u-form-field">
             <div class="u-label-row">
               <label class="u-label" for="urlInput">Override Mockup URL</label>
-              <span class="u-hint">auto-detected</span>
+              <span class="u-hint">debounced</span>
             </div>
             <div class="u-input-wrap">
               <svg class="u-input-icon" viewBox="0 0 256 256" fill="currentColor">
@@ -824,7 +946,7 @@
           <div class="u-form-field">
             <div class="u-label-row">
               <label class="u-label" for="titleInput">Override Tab Title</label>
-              <span class="u-hint">auto-detected</span>
+              <span class="u-hint">debounced</span>
             </div>
             <div class="u-input-wrap">
               <svg class="u-input-icon" viewBox="0 0 256 256" fill="currentColor">
@@ -837,7 +959,7 @@
       </div>
     </section>
 
-    <!-- Accordion Item 4: Settings (Theme Sync & Vercel Blob Token) -->
+    <!-- Accordion Item 4: Settings (Theme, Sync Browser Mockup Theme, Vercel Blob Token) -->
     <section class="u-accordion-item" data-accordion-item="settings">
       <button type="button" class="u-accordion-trigger" data-accordion-trigger="settings">
         <span class="u-accordion-trigger-left">
@@ -876,6 +998,21 @@
             </div>
           </div>
 
+          <div class="u-switch-row">
+            <div class="u-switch-copy">
+              <span class="u-switch-title">Sync Browser Mockup Theme</span>
+              <span class="u-switch-sub">Match Chrome mockup frame to active theme</span>
+            </div>
+            <button
+              id="syncMockupSwitch"
+              type="button"
+              role="switch"
+              aria-checked="true"
+              aria-label="Sync Browser Mockup Theme"
+              class="u-switch"
+            ></button>
+          </div>
+
           <div class="u-form-field">
             <label class="u-label" for="blobTokenInput">Vercel Blob Token</label>
             <div class="u-input-wrap">
@@ -890,7 +1027,20 @@
     </section>
   </div>
 
-  <div id="statusBox" class="u-status"></div>
+  <!-- Notification Toast with Closing Icon -->
+  <div id="statusBox" class="u-status" role="status">
+    <span id="statusText"></span>
+    <button
+      id="btnCloseStatus"
+      type="button"
+      class="u-status-close"
+      aria-label="Close notification"
+    >
+      <svg width="12" height="12" viewBox="0 0 256 256" fill="currentColor">
+        <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/>
+      </svg>
+    </button>
+  </div>
 
   <script type="module" src="popup.js"></script>
 </body>

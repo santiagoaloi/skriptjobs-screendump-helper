@@ -1,10 +1,57 @@
 /**
- * Background Service Worker for Skriptjobs Issue Capture
+ * Background Service Worker for Skriptjobs - Screendump Helper
  * Handles:
- * 1. Capturing the visible tab viewport (`chrome.tabs.captureVisibleTab`)
- * 2. Uploading framed PNGs directly to Vercel Blob (`https://blob.vercel-storage.com/...`)
- * 3. Responding to programmatic agent triggers from content.js
+ * 1. Action context menu items:
+ *    - "Skriptjobs - Screendump Helper" (native top item via homepage_url -> opens GitHub repo)
+ *    - "Get Extension Logs" -> opens chrome-extension://<id>/html/logs.html
+ *    - "Clear Extension Logs" -> clears stored logs
+ * 2. Capturing the visible tab viewport (`chrome.tabs.captureVisibleTab`)
+ * 3. Uploading framed PNGs directly to Vercel Blob (`https://blob.vercel-storage.com/...`)
  */
+
+const REPO_URL = 'https://github.com/santiagoaloi/skriptjobs-screendump-helper';
+
+function setupContextMenus() {
+  if (!chrome.contextMenus) return;
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: 'get-extension-logs',
+      title: 'Get Extension Logs',
+      contexts: ['action'],
+    });
+    chrome.contextMenus.create({
+      id: 'clear-extension-logs',
+      title: 'Clear Extension Logs',
+      contexts: ['action'],
+    });
+    chrome.contextMenus.create({
+      id: 'open-skriptjobs-repo',
+      title: 'Skriptjobs - Screendump Helper',
+      contexts: ['action'],
+    });
+  });
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  setupContextMenus();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  setupContextMenus();
+});
+
+if (chrome.contextMenus?.onClicked) {
+  chrome.contextMenus.onClicked.addListener(async (info) => {
+    if (info.menuItemId === 'get-extension-logs') {
+      const logsUrl = chrome.runtime.getURL('html/logs.html');
+      await chrome.tabs.create({ url: logsUrl });
+    } else if (info.menuItemId === 'clear-extension-logs') {
+      await chrome.storage.local.set({ extensionLogs: [] });
+    } else if (info.menuItemId === 'open-skriptjobs-repo') {
+      await chrome.tabs.create({ url: REPO_URL });
+    }
+  });
+}
 
 async function uploadToVercelBlob({ pngBlob, pathname, token }) {
   const endpoint = `https://blob.vercel-storage.com/${pathname.replace(/^\/+/, '')}`;
@@ -46,8 +93,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     (async () => {
       try {
         const { dataUrl, pathname, token } = msg;
-        const stored = await chrome.storage.local.get(['blobReadWriteToken']);
-        const finalToken = token || stored.blobReadWriteToken;
+        const stored = await chrome.storage.local.get(['blobReadWriteToken', 'blobToken']);
+        const finalToken = token || stored.blobToken || stored.blobReadWriteToken;
         if (!finalToken) {
           throw new Error('Missing BLOB_READ_WRITE_TOKEN. Set it in the extension popup first.');
         }
