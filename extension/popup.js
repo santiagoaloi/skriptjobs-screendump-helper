@@ -57,6 +57,11 @@ const btnOpenFullTab = document.getElementById("btnOpenFullTab");
 const btnOpenFullTabOps = document.getElementById("btnOpenFullTabOps");
 const urlInput = document.getElementById("urlInput");
 const titleInput = document.getElementById("titleInput");
+const faviconInput = document.getElementById("faviconInput");
+const faviconFileInput = document.getElementById("faviconFileInput");
+const btnUploadFavicon = document.getElementById("btnUploadFavicon");
+const btnResetFavicon = document.getElementById("btnResetFavicon");
+const faviconPreviewIcon = document.getElementById("faviconPreviewIcon");
 const blobTokenInput = document.getElementById("blobTokenInput");
 const btnUploadBlob = document.getElementById("btnUploadBlob");
 const btnCopyClipboard = document.getElementById("btnCopyClipboard");
@@ -83,6 +88,7 @@ let openMenuWallpaperId = null;
 let renamingWallpaperId = null;
 let initialTabUrl = "https://docs.skriptjobs.localhost:3050/getting-started/installation";
 let initialTabTitle = "Installation - Skriptjobs";
+let customFaviconDataUrl = null;
 let currentUndoHandler = null;
 
 const imageCache = new Map();
@@ -260,6 +266,30 @@ function createGradientDataUrl(colors, width = 640, height = 400) {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, width, height);
   return c.toDataURL("image/png");
+}
+
+async function resolveFaviconToDataUrl(rawValue) {
+  const trimmed = (rawValue || "").trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("data:image/")) {
+    return trimmed;
+  }
+  try {
+    const img = await loadImage(trimmed);
+    const c = document.createElement("canvas");
+    c.width = 64;
+    c.height = 64;
+    const ctx = c.getContext("2d");
+    ctx.drawImage(img, 0, 0, 64, 64);
+    return c.toDataURL("image/png");
+  } catch {
+    return trimmed;
+  }
+}
+
+function updateFaviconPreviewBadge() {
+  if (!faviconPreviewIcon) return;
+  faviconPreviewIcon.src = customFaviconDataUrl || SKRIPTJOBS_LOGO_URL;
 }
 
 async function resolveWallpaperImage(wp) {
@@ -514,17 +544,14 @@ function renderWallpaperGallery() {
 }
 
 /**
- * Restore all wallpapers, names, default selection, and settings to factory defaults (with Undo support).
+ * Restore only the default wallpapers (original list, names, and default selection),
+ * leaving theme, syncMockupTheme, URL/title overrides, and token untouched.
  */
-async function restoreAllDefaults() {
+async function restoreDefaultWallpapers() {
   const prevSnapshot = {
     wallpapersList: wallpapersList.map((w) => ({ ...w })),
     selectedWallpaperId,
     defaultWallpaperId,
-    themeMode,
-    syncMockupTheme,
-    urlValue: urlInput.value,
-    titleValue: titleInput.value,
   };
 
   openMenuWallpaperId = null;
@@ -532,39 +559,31 @@ async function restoreAllDefaults() {
   wallpapersList = cloneBuiltinWallpapers();
   defaultWallpaperId = "macos-default";
   selectedWallpaperId = "macos-default";
-  urlInput.value = initialTabUrl;
-  titleInput.value = initialTabTitle;
 
-  applySyncMockupSwitch(true, false);
-  applyTheme("system", false);
   await saveSettings();
   renderWallpaperGallery();
   await redrawPreview();
-  await appendLogEvent("settings:restoreDefaults", {
+  await appendLogEvent("wallpapers:restoreDefaults", {
     restoredWallpapersCount: wallpapersList.length,
     defaultWallpaperId,
   });
 
-  setStatus("Restored original defaults.", "success", {
+  setStatus("Restored default wallpapers.", "success", {
     undoLabel: "Undo",
     onUndo: async () => {
       wallpapersList = prevSnapshot.wallpapersList;
       selectedWallpaperId = prevSnapshot.selectedWallpaperId;
       defaultWallpaperId = prevSnapshot.defaultWallpaperId;
-      urlInput.value = prevSnapshot.urlValue;
-      titleInput.value = prevSnapshot.titleValue;
-      applySyncMockupSwitch(prevSnapshot.syncMockupTheme, false);
-      applyTheme(prevSnapshot.themeMode, false);
       await saveSettings();
       renderWallpaperGallery();
       await redrawPreview();
-      setStatus("Reverted to previous settings.", "info");
+      await appendLogEvent("wallpapers:undoRestoreDefaults", {});
+      setStatus("Reverted to previous wallpapers.", "info");
     },
   });
 }
 
-btnRestoreWallpapers.addEventListener("click", restoreAllDefaults);
-btnRestoreDefaults.addEventListener("click", restoreAllDefaults);
+btnRestoreWallpapers.addEventListener("click", restoreDefaultWallpapers);
 
 async function redrawPreview() {
   if (!rawScreenshotImage) return;
@@ -582,6 +601,7 @@ async function redrawPreview() {
     logoImage: skriptjobsLogoImage,
     pageUrl: urlInput.value.trim(),
     pageTitle: titleInput.value.trim(),
+    faviconDataUrl: customFaviconDataUrl,
     mockupTheme,
   });
   dimensionsBadge.textContent = `${dims.width} × ${dims.height} px`;
@@ -734,6 +754,56 @@ urlInput.addEventListener("input", debouncedRedrawPreview);
 titleInput.addEventListener("input", debouncedRedrawPreview);
 blobTokenInput.addEventListener("change", () => saveSettings());
 
+const debouncedFaviconChange = debounce(async () => {
+  const raw = faviconInput.value.trim();
+  if (!raw) {
+    customFaviconDataUrl = null;
+  } else {
+    customFaviconDataUrl = await resolveFaviconToDataUrl(raw);
+  }
+  updateFaviconPreviewBadge();
+  await redrawPreview();
+  await appendLogEvent("output:overrideFavicon", { hasCustomFavicon: Boolean(customFaviconDataUrl) });
+}, 280);
+
+if (faviconInput) {
+  faviconInput.addEventListener("input", debouncedFaviconChange);
+}
+
+if (btnUploadFavicon && faviconFileInput) {
+  btnUploadFavicon.addEventListener("click", () => {
+    faviconFileInput.click();
+  });
+
+  faviconFileInput.addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const dataUrl = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(file);
+    });
+    customFaviconDataUrl = await resolveFaviconToDataUrl(String(dataUrl));
+    faviconInput.value = file.name;
+    updateFaviconPreviewBadge();
+    await redrawPreview();
+    await appendLogEvent("output:uploadFavicon", { fileName: file.name });
+    setStatus(`Applied custom favicon "${file.name}" to tab & URL bar.`, "success");
+    faviconFileInput.value = "";
+  });
+}
+
+if (btnResetFavicon) {
+  btnResetFavicon.addEventListener("click", async () => {
+    customFaviconDataUrl = null;
+    if (faviconInput) faviconInput.value = "";
+    updateFaviconPreviewBadge();
+    await redrawPreview();
+    await appendLogEvent("output:resetFavicon", {});
+    setStatus("Reset favicon to Skriptjobs default.", "info");
+  });
+}
+
 // Copy framed PNG to clipboard
 btnCopyClipboard.addEventListener("click", async () => {
   try {
@@ -800,6 +870,7 @@ btnDownloadThemeZip.addEventListener("click", async () => {
       logoImage: skriptjobsLogoImage,
       pageUrl: urlInput.value.trim(),
       pageTitle: titleInput.value.trim(),
+      faviconDataUrl: customFaviconDataUrl,
       mockupTheme: "light",
     });
     const lightBlob = await getCanvasBlob(offscreenLight);
@@ -813,6 +884,7 @@ btnDownloadThemeZip.addEventListener("click", async () => {
       logoImage: skriptjobsLogoImage,
       pageUrl: urlInput.value.trim(),
       pageTitle: titleInput.value.trim(),
+      faviconDataUrl: customFaviconDataUrl,
       mockupTheme: "dark",
     });
     const darkBlob = await getCanvasBlob(offscreenDark);

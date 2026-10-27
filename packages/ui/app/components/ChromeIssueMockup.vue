@@ -8,6 +8,7 @@ const props = withDefaults(defineProps<{
   logoSrc?: string
   pageUrl?: string
   pageTitle?: string
+  faviconDataUrl?: string | null
   mockupTheme?: 'dark' | 'light'
   margin?: number
 }>(), {
@@ -15,6 +16,7 @@ const props = withDefaults(defineProps<{
   logoSrc: '/assets/brand/logo-color.svg',
   pageUrl: 'https://docs.skriptjobs.localhost:3050/getting-started/installation',
   pageTitle: 'Installation - Skriptjobs',
+  faviconDataUrl: null,
   mockupTheme: 'dark',
   margin: 56
 })
@@ -49,6 +51,7 @@ async function draw() {
     logoImage: logo,
     pageUrl: props.pageUrl,
     pageTitle: props.pageTitle,
+    faviconDataUrl: props.faviconDataUrl,
     mockupTheme: props.mockupTheme,
     margin: props.margin
   })
@@ -66,7 +69,7 @@ async function openFullResolutionInNewTab() {
 
 onMounted(draw)
 watch(
-  () => [props.screenshotSrc, props.wallpaperSrc, props.logoSrc, props.pageUrl, props.pageTitle, props.mockupTheme],
+  () => [props.screenshotSrc, props.wallpaperSrc, props.logoSrc, props.pageUrl, props.pageTitle, props.faviconDataUrl, props.mockupTheme],
   draw
 )
 

@@ -1,6 +1,6 @@
-# Skriptjobs | Screendump Helper
+# Skriptjobs | Screendump Helper Extension
 
-**Skriptjobs Screendump Helper** is a Chrome Extension (Manifest V3), reusable `@nuxt/ui` + `@skriptjobs/ui` component library, and Node.js CLI for capturing and framing browser screenshots inside a macOS Chrome dark-theme mockup window (`1711 × 1076 px`).
+**Skriptjobs | Screendump Helper Extension** is a Chrome Extension (Manifest V3), reusable `@nuxt/ui` + `@skriptjobs/ui` component library, and Node.js CLI for capturing and framing browser screenshots inside a macOS Chrome dark- or light-theme mockup window (`1711 × 1076 px`).
 
 Built for **Skriptjobs GitHub issues and documentation**, it frames any active tab or local screenshot over a selectable wallpaper background with matching outer margins, a macOS window drop shadow, official Skriptjobs three-triangles brand marks in the tab and URL bar, and one-click upload to **Vercel Blob** (`skriptjobs-issue-screenshots`).
 
@@ -20,10 +20,10 @@ Grab the ready-to-install Chrome Extension package from [**GitHub Releases (`lat
 
 ## ✨ Key Features
 
-- **macOS Chrome Dark-Theme Mockup (`1711 × 1076 px`):** Minimal Chrome frame showing only the traffic lights, active tab with the Skriptjobs three-triangles favicon, and pill URL bar with the Skriptjobs three-triangles badge over your selected wallpaper.
-- **Hover-to-Inspect Live Preview:** Live `<canvas>` preview in the extension popup with a hover-only top-right button to open the full-resolution PNG in a new tab.
-- **Multi-Wallpaper Gallery:** Ships with 4 built-in presets (**macOS Default**, **Skriptjobs Indigo**, **Nordic Teal**, **Midnight Slate**) plus custom multi-file wallpaper uploads and a top-right star toggle for the default background.
-- **Single-Open Collapsible Accordion:** Built with `@nuxt/ui` and `@skriptjobs/ui` dark theme tokens (`Wallpapers`, `Image Operations`, `Output`, and `Settings`, with `System` / `Dark` / `Light` theme sync), with icon-only actions for **Upload to Vercel Blob & Copy Markdown**, **Copy PNG**, and **Download PNG**.
+- **macOS Chrome Dark & Light Mockup (`1711 × 1076 px`):** Minimal Chrome frame showing only the traffic lights, active tab with the Skriptjobs three-triangles favicon, and pill URL bar with the Skriptjobs three-triangles badge over your selected wallpaper.
+- **Hover-to-Inspect Live Preview:** Live `<canvas>` preview in the extension popup with a top-right button to open the full-resolution PNG in a new tab.
+- **Multi-Wallpaper Gallery & Context Menu:** Ships with 4 built-in presets (**macOS Default**, **Skriptjobs Indigo**, **Nordic Teal**, **Midnight Slate**) plus custom multi-file wallpaper uploads, a 3-dots card menu (**Change image name**, **Remove image** with **Undo**, **Set as default**), and a **Restore default wallpapers** action.
+- **Single-Open Collapsible Accordion:** Built with `@nuxt/ui` and `@skriptjobs/ui` neutral tokens (`Wallpapers`, `Image Operations`, `Output`, and `Settings`, with `System` / `Dark` / `Light` theme selector and **Sync Browser Mockup Theme** switch), with square icon actions for **Copy PNG to clipboard**, **Download PNG**, **Download Light & Dark ZIP** (for Nuxt UI `<UColorModeImage />`), **Open full image in new tab**, and **Upload to Vercel Blob & copy Markdown**.
 
 ---
 
@@ -44,13 +44,13 @@ Grab the ready-to-install Chrome Extension package from [**GitHub Releases (`lat
 1. Open Google Chrome and navigate to `chrome://extensions`.
 2. Enable **Developer mode** in the top-right corner.
 3. Click **Load unpacked** and select the [`extension/`](./extension) directory (or an unzipped release archive).
-4. Pin **Skriptjobs Screendump Helper** to your Chrome toolbar.
+4. Pin **Skriptjobs | Screendump Helper Extension** to your Chrome toolbar.
 
 ### 2. Configure Vercel Blob Upload (Optional)
 
 1. Open the **Settings** accordion section in the extension popup.
 2. Paste your `BLOB_READ_WRITE_TOKEN` into the **Vercel Blob Token** field (stored locally in `chrome.storage.local`).
-3. Open **Image Operations** and click **Upload to Vercel Blob & Copy Markdown**.
+3. Open **Image Operations** and click **Upload to Vercel Blob & copy Markdown**.
 
 ---
 
@@ -95,6 +95,8 @@ skriptjobs-screendump-helper/
 │   ├── upload-issue-screenshot.mjs
 │   └── release.mjs             # Release packager & publisher (npm run release)
 ├── shared/
-│   └── frame-renderer.js       # Shared macOS Chrome dark-theme frame renderer
+│   ├── frame-renderer.js       # Shared macOS Chrome dark & light frame renderer
+│   ├── zip-builder.js          # Dependency-free ZIP builder for Light & Dark exports
+│   └── logger.js               # Operation logger for extension context menu diagnostics
 └── assets/backgrounds/         # CLI wallpaper presets & manifest
 ```

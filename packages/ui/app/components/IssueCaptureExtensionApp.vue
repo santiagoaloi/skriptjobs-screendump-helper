@@ -81,6 +81,8 @@ const accordionItems = [
 
 const pageUrlInput = ref('https://docs.skriptjobs.localhost:3050/getting-started/installation')
 const pageTitleInput = ref('Installation - Skriptjobs')
+const faviconDataUrl = ref<string | null>(null)
+const faviconInput = ref('')
 const debouncedPageUrl = ref(pageUrlInput.value)
 const debouncedPageTitle = ref(pageTitleInput.value)
 
@@ -187,28 +189,22 @@ function removeWallpaper(id: string) {
   })
 }
 
-function restoreAllDefaults() {
+function restoreDefaultWallpapers() {
   const prevWallpapers = wallpapers.value.map(w => ({ ...w }))
   const prevDefault = defaultWallpaperId.value
   const prevSelected = selectedWallpaperId.value
-  const prevTheme = colorMode.preference
-  const prevSync = syncMockupTheme.value
 
   openMenuWallpaperId.value = null
   renamingWallpaperId.value = null
   wallpapers.value = BUILTIN_WALLPAPERS.map(w => ({ ...w }))
   defaultWallpaperId.value = 'macos-default'
   selectedWallpaperId.value = 'macos-default'
-  colorMode.preference = 'system'
-  syncMockupTheme.value = true
 
-  showStatus('Restored original defaults.', () => {
+  showStatus('Restored default wallpapers.', () => {
     wallpapers.value = prevWallpapers
     defaultWallpaperId.value = prevDefault
     selectedWallpaperId.value = prevSelected
-    colorMode.preference = prevTheme
-    syncMockupTheme.value = prevSync
-    showStatus('Reverted to previous settings.')
+    showStatus('Reverted to previous wallpapers.')
   })
 }
 
@@ -305,7 +301,7 @@ function onUploadWallpapers(e: Event) {
 
 <template>
   <UApp>
-    <div class="w-[460px] bg-default text-default p-3.5 flex flex-col gap-2 font-sans">
+    <div class="w-[540px] bg-default text-default p-3.5 flex flex-col gap-2 font-sans">
       <!-- Header: Official Skriptjobs Brand Logo + Baseline-Aligned Plain Text Title -->
       <header class="flex items-center justify-between pb-0.5">
         <div class="flex items-center gap-2.5">
@@ -336,6 +332,7 @@ function onUploadWallpapers(e: Event) {
           logo-src="/assets/brand/logo-color.svg"
           :page-url="debouncedPageUrl"
           :page-title="debouncedPageTitle"
+          :favicon-data-url="faviconDataUrl"
           :mockup-theme="activeMockupTheme"
           @rendered="(d) => (dimensions = d)"
         />
@@ -356,15 +353,15 @@ function onUploadWallpapers(e: Event) {
             <div class="flex items-center justify-between">
               <span class="text-[11px] text-muted">Select background or open menu</span>
               <div class="flex items-center gap-1.5">
-                <UTooltip text="Restore to defaults">
+                <UTooltip text="Restore default wallpapers">
                   <UButton
                     color="neutral"
                     variant="soft"
                     size="xs"
                     square
                     icon="i-ph-arrow-counter-clockwise-bold"
-                    aria-label="Restore to defaults"
-                    @click="restoreAllDefaults"
+                    aria-label="Restore default wallpapers"
+                    @click="restoreDefaultWallpapers"
                   />
                 </UTooltip>
                 <UTooltip text="Upload wallpapers">
@@ -538,6 +535,29 @@ function onUploadWallpapers(e: Event) {
             <UFormField label="Override Tab Title">
               <UInput v-model="pageTitleInput" color="neutral" icon="i-ph-browser-bold" size="xs" class="w-full" />
             </UFormField>
+
+            <UFormField label="Override Favicon (Tab & URL Bar)">
+              <div class="flex items-center gap-1.5">
+                <UInput
+                  v-model="faviconInput"
+                  color="neutral"
+                  icon="i-ph-image-square-bold"
+                  size="xs"
+                  placeholder="Default (Skriptjobs) — paste URL or upload icon"
+                  class="font-mono flex-1"
+                  @change="faviconDataUrl = faviconInput.trim() || null"
+                />
+                <UButton
+                  color="neutral"
+                  variant="soft"
+                  size="xs"
+                  square
+                  icon="i-ph-arrow-counter-clockwise-bold"
+                  aria-label="Reset to Skriptjobs favicon"
+                  @click="faviconDataUrl = null; faviconInput = ''"
+                />
+              </div>
+            </UFormField>
           </div>
         </template>
 
@@ -587,7 +607,7 @@ function onUploadWallpapers(e: Event) {
                 size="xs"
                 icon="i-ph-arrow-counter-clockwise-bold"
                 label="Restore to defaults"
-                @click="restoreAllDefaults"
+                @click="restoreDefaultWallpapers"
               />
             </div>
           </div>

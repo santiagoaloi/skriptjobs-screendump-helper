@@ -189,9 +189,9 @@ export function buildChromeHeaderSvg({
 
   const { scheme, host, path } = splitUrlParts(url);
 
-  // Active Tab Favicon
+  // Active Tab Favicon (uses custom faviconDataUrl if provided, otherwise Skriptjobs three-triangles)
   const tabFaviconMarkup = faviconDataUrl
-    ? `<image href="${escapeXml(faviconDataUrl)}" x="${tabX + 14}" y="${tabY + 8.5}" width="16" height="16" />`
+    ? `<image href="${escapeXml(faviconDataUrl)}" x="${tabX + 14}" y="${tabY + 8.5}" width="16" height="16" preserveAspectRatio="xMidYMid meet" />`
     : buildSkriptjobsTrianglesSvgGroup({
         x: tabX + 14,
         y: tabY + 8.5,
@@ -202,17 +202,19 @@ export function buildChromeHeaderSvg({
         tileStroke: Hdr.faviconTileStroke,
       });
 
-  // Omnibox Start Badge
+  // Omnibox Start Badge (uses custom faviconDataUrl if provided, otherwise Skriptjobs three-triangles)
   const badgeCx = omniX + 17;
   const badgeCy = omniY + 17;
   const badgeLogoSize = 16.5;
-  const omniboxBadgeLogoMarkup = buildSkriptjobsTrianglesSvgGroup({
-    x: badgeCx - badgeLogoSize / 2,
-    y: badgeCy - badgeLogoSize / 2 - 0.3,
-    size: badgeLogoSize,
-    fill: Hdr.omniboxLogoFill,
-    withDarkTile: false,
-  });
+  const omniboxBadgeLogoMarkup = faviconDataUrl
+    ? `<image href="${escapeXml(faviconDataUrl)}" x="${badgeCx - 8}" y="${badgeCy - 8}" width="16" height="16" preserveAspectRatio="xMidYMid meet" />`
+    : buildSkriptjobsTrianglesSvgGroup({
+        x: badgeCx - badgeLogoSize / 2,
+        y: badgeCy - badgeLogoSize / 2 - 0.3,
+        size: badgeLogoSize,
+        fill: Hdr.omniboxLogoFill,
+        withDarkTile: false,
+      });
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${windowWidth}" height="${H}" viewBox="0 0 ${windowWidth} ${H}">
   <defs>

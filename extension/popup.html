@@ -10,6 +10,7 @@
     /* ==========================================================================
        @skriptjobs/ui + @nuxt/ui v4 Design System Tokens (Neutral Light & Dark)
        Zero transitions on theme changes or accordion chevrons.
+       Scaled up (540px container, larger typography, zero scrollbars).
        ========================================================================== */
     :root, html.light {
       color-scheme: light;
@@ -43,7 +44,7 @@
       --scrollbar-thumb: #d4d4d8;
       --scrollbar-thumb-hover: #a1a1aa;
 
-      --ui-radius: 0.5rem;
+      --ui-radius: 0.55rem;
     }
 
     html.dark {
@@ -81,40 +82,39 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      scrollbar-width: thin;
-      scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+      scrollbar-width: none;
     }
-
     *::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    *::-webkit-scrollbar-track {
-      background: var(--scrollbar-track);
-      border-radius: 9999px;
-    }
-    *::-webkit-scrollbar-thumb {
-      background: var(--scrollbar-thumb);
-      border-radius: 9999px;
-    }
-    *::-webkit-scrollbar-thumb:hover {
-      background: var(--scrollbar-thumb-hover);
+      display: none;
+      width: 0;
+      height: 0;
     }
 
-    body {
-      width: 460px;
+    button, input {
+      outline: none;
+    }
+    button:focus, button:focus-visible {
+      outline: none;
+    }
+
+    html, body {
+      width: 540px;
+      overflow-x: hidden;
       background-color: var(--ui-bg);
       color: var(--ui-text);
       font-family: var(--font-sans);
       letter-spacing: -0.01rem;
       -webkit-font-smoothing: antialiased;
-      padding: 10px 14px;
+    }
+
+    body {
+      padding: 10px 14px 12px 14px;
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
 
-    /* Header (Skriptjobs wordmark + Baseline-Aligned Plain Text Title) */
+    /* Header (Skriptjobs wordmark + Baseline-Aligned Plain Text Title, no bottom border) */
     .u-header {
       display: flex;
       align-items: center;
@@ -124,10 +124,10 @@
     .u-brand {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 11px;
     }
     .u-brand-logo {
-      height: 28px;
+      height: 31px;
       width: auto;
       display: block;
       margin-left: -4px;
@@ -135,11 +135,11 @@
     }
     .u-divider-v {
       width: 1px;
-      height: 14px;
+      height: 16px;
       background: var(--ui-border-muted);
     }
     .u-brand-subtitle {
-      font-size: 14.5px;
+      font-size: 16px;
       font-weight: 500;
       letter-spacing: -0.015em;
       color: var(--ui-text-muted);
@@ -158,26 +158,26 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 6px 10px;
+      padding: 7px 12px;
       border-bottom: 1px solid var(--ui-border);
       background: var(--ui-header-surface);
       border-top-left-radius: calc(var(--ui-radius) - 1px);
       border-top-right-radius: calc(var(--ui-radius) - 1px);
     }
     .u-card-title {
-      font-size: 12px;
+      font-size: 13.5px;
       font-weight: 600;
       color: var(--ui-text-highlighted);
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
     }
 
-    /* Live Mockup Preview Container (<ChromeIssueMockup />) with top-right Open in Tab button (no shadow, no animation) */
+    /* Live Mockup Preview Container (<ChromeIssueMockup />) with top-right Open in Tab button */
     .mockup-preview-wrap {
       position: relative;
       background: var(--ui-preview-stage);
-      padding: 6px;
+      padding: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -186,7 +186,7 @@
     }
     canvas#previewCanvas {
       max-width: 100%;
-      max-height: 168px;
+      max-height: 144px;
       width: auto;
       height: auto;
       border-radius: 6px;
@@ -194,11 +194,11 @@
     }
     .preview-open-tab-btn {
       position: absolute;
-      top: 12px;
-      right: 12px;
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
+      top: 14px;
+      right: 14px;
+      width: 32px;
+      height: 32px;
+      border-radius: 7px;
       background: var(--ui-bg-elevated);
       border: 1px solid var(--ui-border-muted);
       color: var(--ui-text-highlighted);
@@ -251,9 +251,9 @@
       border: none;
       color: var(--ui-text-highlighted);
       font-family: var(--font-sans);
-      font-size: 12px;
+      font-size: 13.5px;
       font-weight: 600;
-      padding: 7.5px 12px;
+      padding: 7.5px 13px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -266,11 +266,11 @@
     .u-accordion-trigger-left {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 9px;
     }
     .u-accordion-icon {
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       color: var(--ui-text-muted);
       flex-shrink: 0;
     }
@@ -278,8 +278,8 @@
       color: var(--ui-text-highlighted);
     }
     .u-accordion-chevron {
-      width: 14px;
-      height: 14px;
+      width: 15px;
+      height: 15px;
       color: var(--ui-text-muted);
       flex-shrink: 0;
     }
@@ -289,7 +289,7 @@
     }
     .u-accordion-body {
       display: none;
-      padding: 2px 12px 10px 12px;
+      padding: 2px 13px 10px 13px;
       overflow: visible;
     }
     .u-accordion-item.open .u-accordion-body {
@@ -301,31 +301,31 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 6px;
+      margin-bottom: 7px;
     }
     .wp-toolbar-label {
-      font-size: 11px;
+      font-size: 12.5px;
       color: var(--ui-text-muted);
     }
     .wp-toolbar-actions {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
     }
 
     /* Multi-Wallpaper Gallery Grid (no hardcoded height or scrollbar) */
     .wallpaper-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 6px;
+      gap: 7px;
       overflow: visible;
     }
     .wp-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 5px 44px 5px 5px;
-      border-radius: 7px;
+      gap: 9px;
+      padding: 6px 48px 6px 6px;
+      border-radius: 8px;
       border: 1px solid var(--ui-border);
       background: var(--ui-bg);
       cursor: pointer;
@@ -347,9 +347,9 @@
       box-shadow: inset 0 0 0 1px var(--ui-border-muted);
     }
     .wp-thumb {
-      width: 44px;
-      height: 28px;
-      border-radius: 4px;
+      width: 50px;
+      height: 32px;
+      border-radius: 5px;
       object-fit: cover;
       border: 1px solid var(--ui-border-muted);
       flex-shrink: 0;
@@ -361,7 +361,7 @@
       align-items: center;
     }
     .wp-name {
-      font-size: 11.5px;
+      font-size: 13px;
       font-weight: 500;
       color: var(--ui-text-highlighted);
       white-space: nowrap;
@@ -372,10 +372,10 @@
       width: 100%;
       background: var(--ui-bg-elevated);
       border: 1px solid var(--ui-border-accented);
-      border-radius: 4px;
-      padding: 2px 5px;
+      border-radius: 5px;
+      padding: 3px 6px;
       font-family: var(--font-sans);
-      font-size: 11px;
+      font-size: 12.5px;
       color: var(--ui-text-highlighted);
       outline: none;
     }
@@ -384,15 +384,15 @@
     .wp-corner-actions {
       position: absolute;
       top: 50%;
-      right: 5px;
+      right: 6px;
       transform: translateY(-50%);
       display: flex;
       align-items: center;
-      gap: 2px;
+      gap: 3px;
     }
     .wp-default-indicator {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       color: var(--ui-text-highlighted);
       display: inline-flex;
       align-items: center;
@@ -401,9 +401,9 @@
     }
     .wp-menu-btn {
       appearance: none;
-      width: 22px;
-      height: 22px;
-      border-radius: 5px;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
       border: 1px solid transparent;
       background: transparent;
       color: var(--ui-text-muted);
@@ -428,13 +428,13 @@
       width: calc(100% + 2px);
       background: var(--ui-bg-elevated);
       border: 1px solid var(--ui-border-muted);
-      border-radius: 7px;
+      border-radius: 8px;
       padding: 4px;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
       z-index: 120;
       display: none;
       flex-direction: column;
-      gap: 1px;
+      gap: 2px;
     }
     .wp-dropdown.open {
       display: flex;
@@ -446,14 +446,14 @@
       background: transparent;
       color: var(--ui-text);
       font-family: var(--font-sans);
-      font-size: 11.5px;
+      font-size: 12.5px;
       font-weight: 500;
-      padding: 5.5px 8px;
+      padding: 6.5px 9px;
       border-radius: 5px;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
       text-align: left;
       white-space: nowrap;
     }
@@ -462,8 +462,8 @@
       color: var(--ui-text-highlighted);
     }
     .wp-dropdown-item svg {
-      width: 13px;
-      height: 13px;
+      width: 14px;
+      height: 14px;
       color: var(--ui-text-muted);
       flex-shrink: 0;
     }
@@ -471,13 +471,13 @@
       color: var(--ui-text-highlighted);
     }
 
-    /* Neutral Buttons + Icon-only Square Buttons + UTooltip */
+    /* Neutral Buttons + Icon-only Square Buttons + UTooltip (display:none when inactive so zero overflow!) */
     .u-btn {
       appearance: none;
-      border-radius: 6px;
+      border-radius: 7px;
       padding: 7px 12px;
       font-family: var(--font-sans);
-      font-size: 12px;
+      font-size: 12.5px;
       font-weight: 500;
       cursor: pointer;
       display: inline-flex;
@@ -488,17 +488,17 @@
       position: relative;
     }
     .u-btn-icon {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       padding: 0;
-      border-radius: 6px;
+      border-radius: 7px;
       flex-shrink: 0;
     }
     .u-btn-icon-sm {
-      width: 26px;
-      height: 26px;
+      width: 30px;
+      height: 30px;
       padding: 0;
-      border-radius: 6px;
+      border-radius: 7px;
       flex-shrink: 0;
     }
     .u-btn-soft,
@@ -508,34 +508,41 @@
       color: var(--ui-text-highlighted);
     }
     .u-btn-soft:hover,
-    .u-btn-neutral:hover {
+    .u-btn-neutral:hover,
+    .u-btn-soft:focus-visible,
+    .u-btn-neutral:focus-visible {
       background: var(--ui-bg-accented);
       border-color: var(--ui-border-accented);
+      box-shadow: none;
     }
 
-    /* @nuxt/ui UTooltip styling */
+    /* @nuxt/ui UTooltip styling — display:none when inactive so it never creates document overflow */
     [data-tooltip]:not(.preview-open-tab-btn) {
       position: relative;
     }
     [data-tooltip]::after {
       content: attr(data-tooltip);
       position: absolute;
-      top: calc(100% + 6px);
+      bottom: calc(100% + 6px);
       left: 50%;
       transform: translateX(-50%);
       background: var(--ui-bg-elevated);
       color: var(--ui-text-highlighted);
       border: 1px solid var(--ui-border-muted);
       font-family: var(--font-sans);
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 500;
-      padding: 4px 8px;
-      border-radius: 5px;
+      padding: 4.5px 9px;
+      border-radius: 6px;
       white-space: nowrap;
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
-      opacity: 0;
+      display: none;
       pointer-events: none;
       z-index: 150;
+    }
+    .preview-open-tab-btn[data-tooltip]::after {
+      bottom: auto;
+      top: calc(100% + 6px);
     }
     [data-tooltip].tooltip-right::after {
       left: auto;
@@ -549,15 +556,15 @@
     [data-tooltip]:hover::after,
     [data-tooltip]:focus-visible::after,
     [data-tooltip].force-tooltip::after {
-      opacity: 1;
+      display: block;
     }
 
     /* Image Operations Row inside Accordion (All Square Icon Buttons) */
     .u-ops-row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding-top: 2px;
+      gap: 9px;
+      padding-top: 3px;
     }
 
     /* Output & Settings Form Stacks */
@@ -578,12 +585,12 @@
       justify-content: space-between;
     }
     .u-label {
-      font-size: 11px;
+      font-size: 12.5px;
       font-weight: 500;
       color: var(--ui-text);
     }
     .u-hint {
-      font-size: 10px;
+      font-size: 11.5px;
       color: var(--ui-text-dimmed);
       font-family: var(--font-mono);
     }
@@ -591,12 +598,28 @@
       position: relative;
       display: flex;
       align-items: center;
+      flex: 1;
+      min-width: 0;
+    }
+    .u-favicon-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .u-favicon-preview {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      object-fit: contain;
+      position: absolute;
+      left: 10px;
+      pointer-events: none;
     }
     .u-input-icon {
       position: absolute;
-      left: 9px;
-      width: 13px;
-      height: 13px;
+      left: 10px;
+      width: 14px;
+      height: 14px;
       color: var(--ui-text-dimmed);
       pointer-events: none;
     }
@@ -605,16 +628,16 @@
       width: 100%;
       background: var(--ui-bg);
       border: 1px solid var(--ui-border-muted);
-      border-radius: 6px;
-      padding: 5.5px 9px 5.5px 28px;
+      border-radius: 7px;
+      padding: 6.5px 10px 6.5px 31px;
       color: var(--ui-text-highlighted);
       font-family: var(--font-sans);
-      font-size: 11.5px;
+      font-size: 12.5px;
       outline: none;
     }
     .u-input.mono {
       font-family: var(--font-mono);
-      font-size: 11px;
+      font-size: 12px;
     }
     .u-input:hover {
       border-color: var(--ui-border-accented);
@@ -640,15 +663,15 @@
       background: transparent;
       color: var(--ui-text-muted);
       font-family: var(--font-sans);
-      font-size: 11px;
+      font-size: 12.5px;
       font-weight: 500;
-      padding: 4.5px 6px;
+      padding: 5px 8px;
       border-radius: 5px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 5px;
+      gap: 6px;
     }
     .u-theme-option:hover {
       color: var(--ui-text-highlighted);
@@ -661,8 +684,8 @@
       font-weight: 600;
     }
     .u-theme-option svg {
-      width: 12px;
-      height: 12px;
+      width: 14px;
+      height: 14px;
       flex-shrink: 0;
     }
 
@@ -672,8 +695,8 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      padding: 6px 8px;
-      border-radius: 6px;
+      padding: 6.5px 10px;
+      border-radius: 7px;
       background: var(--ui-bg);
       border: 1px solid var(--ui-border-muted);
     }
@@ -683,18 +706,18 @@
       gap: 1px;
     }
     .u-switch-title {
-      font-size: 11px;
+      font-size: 12.5px;
       font-weight: 500;
       color: var(--ui-text-highlighted);
     }
     .u-switch-sub {
-      font-size: 10px;
+      font-size: 11.5px;
       color: var(--ui-text-muted);
     }
     .u-switch {
       appearance: none;
-      width: 34px;
-      height: 19px;
+      width: 38px;
+      height: 21px;
       border-radius: 9999px;
       background: var(--ui-bg-accented);
       border: 1px solid var(--ui-border-muted);
@@ -707,8 +730,8 @@
       position: absolute;
       top: 2px;
       left: 2px;
-      width: 13px;
-      height: 13px;
+      width: 15px;
+      height: 15px;
       border-radius: 9999px;
       background: var(--ui-text-muted);
     }
@@ -717,29 +740,15 @@
       border-color: var(--ui-text-highlighted);
     }
     .u-switch[aria-checked="true"]::after {
-      transform: translateX(15px);
+      transform: translateX(17px);
       background: var(--ui-bg-elevated);
-    }
-
-    /* Settings Footer Row (Restore to Defaults) */
-    .u-settings-footer {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      padding-top: 2px;
-    }
-    .u-btn-xs {
-      padding: 4.5px 9px;
-      font-size: 11px;
-      border-radius: 5px;
-      gap: 5px;
     }
 
     /* Status Toast Bar with Undo Button + Close Icon */
     .u-status {
-      font-size: 11px;
-      padding: 6px 8px 6px 10px;
-      border-radius: 6px;
+      font-size: 12.5px;
+      padding: 7px 10px 7px 12px;
+      border-radius: 7px;
       background: var(--ui-bg-muted);
       border: 1px solid var(--ui-border-muted);
       color: var(--ui-text);
@@ -771,7 +780,7 @@
     .u-status-actions {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
       flex-shrink: 0;
     }
     .u-status-undo {
@@ -780,10 +789,10 @@
       background: var(--ui-bg-elevated);
       color: var(--ui-text-highlighted);
       font-family: var(--font-sans);
-      font-size: 10.5px;
+      font-size: 11.5px;
       font-weight: 500;
-      padding: 2px 7px;
-      border-radius: 4px;
+      padding: 2.5px 8px;
+      border-radius: 5px;
       cursor: pointer;
       display: none;
     }
@@ -796,9 +805,9 @@
     }
     .u-status-close {
       appearance: none;
-      width: 20px;
-      height: 20px;
-      border-radius: 4px;
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
       border: none;
       background: transparent;
       color: currentColor;
@@ -829,7 +838,7 @@
   <section class="u-card">
     <div class="u-card-header">
       <div class="u-card-title">
-        <svg width="13" height="13" viewBox="0 0 256 256" fill="currentColor">
+        <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor">
           <path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,16V88H40V56ZM40,200V104H216v96Z"/>
         </svg>
         Preview
@@ -845,7 +854,7 @@
         data-tooltip="Open full image in new tab"
         aria-label="Open full image in new tab"
       >
-        <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
+        <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor">
           <path d="M224,104a8,8,0,0,1-16,0V59.32l-66.33,66.34a8,8,0,0,1-11.32-11.32L196.68,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z"/>
         </svg>
       </button>
@@ -876,10 +885,10 @@
               id="btnRestoreWallpapers"
               type="button"
               class="u-btn u-btn-icon-sm u-btn-soft tooltip-right"
-              data-tooltip="Restore to defaults"
-              aria-label="Restore to defaults"
+              data-tooltip="Restore default wallpapers"
+              aria-label="Restore default wallpapers"
             >
-              <svg width="13" height="13" viewBox="0 0 256 256" fill="currentColor">
+              <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor">
                 <path d="M224,128a96,96,0,0,1-94.71,96H128A95.38,95.38,0,0,1,62.1,197.8a8,8,0,0,1,11-11.63A80,80,0,1,0,71.43,71.39a3.07,3.07,0,0,1-.26.25L44.59,96H72a8,8,0,0,1,0,16H24a8,8,0,0,1-8-8V56a8,8,0,0,1,16,0V85.8L59.84,60A96,96,0,0,1,224,128Z"/>
               </svg>
             </button>
@@ -890,7 +899,7 @@
               data-tooltip="Upload wallpapers"
               aria-label="Upload wallpapers"
             >
-              <svg width="13" height="13" viewBox="0 0 256 256" fill="currentColor">
+              <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor">
                 <path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0ZM93.66,77.66,120,51.31V144a8,8,0,0,0,16,0V51.31l26.34,26.35a8,8,0,0,0,11.32-11.32l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,93.66,77.66Z"/>
               </svg>
             </button>
@@ -922,7 +931,7 @@
             data-tooltip="Copy PNG to clipboard"
             aria-label="Copy PNG to clipboard"
           >
-            <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor">
+            <svg width="17" height="17" viewBox="0 0 256 256" fill="currentColor">
               <path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/>
             </svg>
           </button>
@@ -934,7 +943,7 @@
             data-tooltip="Download PNG"
             aria-label="Download PNG"
           >
-            <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor">
+            <svg width="17" height="17" viewBox="0 0 256 256" fill="currentColor">
               <path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V32a8,8,0,0,0-16,0v92.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z"/>
             </svg>
           </button>
@@ -946,7 +955,7 @@
             data-tooltip="Download Light &amp; Dark ZIP"
             aria-label="Download Light &amp; Dark ZIP"
           >
-            <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor">
+            <svg width="17" height="17" viewBox="0 0 256 256" fill="currentColor">
               <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192V40a88,88,0,0,1,0,176Z"/>
             </svg>
           </button>
@@ -958,7 +967,7 @@
             data-tooltip="Open full image in new tab"
             aria-label="Open full image in new tab"
           >
-            <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor">
+            <svg width="17" height="17" viewBox="0 0 256 256" fill="currentColor">
               <path d="M224,104a8,8,0,0,1-16,0V59.32l-66.33,66.34a8,8,0,0,1-11.32-11.32L196.68,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z"/>
             </svg>
           </button>
@@ -970,7 +979,7 @@
             data-tooltip="Upload to Vercel Blob &amp; copy Markdown"
             aria-label="Upload to Vercel Blob &amp; copy Markdown"
           >
-            <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor">
+            <svg width="17" height="17" viewBox="0 0 256 256" fill="currentColor">
               <path d="M178.34,165.66,160,147.31V208a8,8,0,0,1-16,0V147.31l-18.34,18.35a8,8,0,0,1-11.32-11.32l32-32a8,8,0,0,1,11.32,0l32,32a8,8,0,0,1-11.32,11.32ZM160,40A88.08,88.08,0,0,0,81.29,88.68,64,64,0,1,0,72,216h40a8,8,0,0,0,0-16H72a48,48,0,0,1,0-96c1.1,0,2.2,0,3.29.12A88,88,0,0,0,72,128a8,8,0,0,0,16,0,72,72,0,1,1,104,64.6V208a8,8,0,0,0,16,0v-4.53A88,88,0,0,0,160,40Z"/>
             </svg>
           </button>
@@ -1016,16 +1025,56 @@
               <input id="titleInput" type="text" class="u-input" value="Installation - Skriptjobs" />
             </div>
           </div>
+
+          <div class="u-form-field">
+            <div class="u-label-row">
+              <label class="u-label" for="faviconInput">Override Favicon (Tab &amp; URL Bar)</label>
+            </div>
+            <div class="u-favicon-row">
+              <div class="u-input-wrap">
+                <img id="faviconPreviewIcon" src="assets/brand/logo-three-triangles.svg" alt="" class="u-favicon-preview" />
+                <input
+                  id="faviconInput"
+                  type="text"
+                  class="u-input mono"
+                  placeholder="Default (Skriptjobs) — paste URL or upload icon"
+                />
+              </div>
+              <input id="faviconFileInput" type="file" accept="image/*,.ico,.svg" style="display:none" />
+              <button
+                id="btnUploadFavicon"
+                type="button"
+                class="u-btn u-btn-icon-sm u-btn-soft tooltip-right"
+                data-tooltip="Upload custom favicon"
+                aria-label="Upload custom favicon"
+              >
+                <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
+                  <path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0ZM93.66,77.66,120,51.31V144a8,8,0,0,0,16,0V51.31l26.34,26.35a8,8,0,0,0,11.32-11.32l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,93.66,77.66Z"/>
+                </svg>
+              </button>
+              <button
+                id="btnResetFavicon"
+                type="button"
+                class="u-btn u-btn-icon-sm u-btn-soft tooltip-right"
+                data-tooltip="Reset to Skriptjobs favicon"
+                aria-label="Reset to Skriptjobs favicon"
+              >
+                <svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor">
+                  <path d="M224,128a96,96,0,0,1-94.71,96H128A95.38,95.38,0,0,1,62.1,197.8a8,8,0,0,1,11-11.63A80,80,0,1,0,71.43,71.39a3.07,3.07,0,0,1-.26.25L44.59,96H72a8,8,0,0,1,0,16H24a8,8,0,0,1-8-8V56a8,8,0,0,1,16,0V85.8L59.84,60A96,96,0,0,1,224,128Z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Accordion Item 4: Settings (Theme, Sync Browser Mockup Theme, Vercel Blob Token, Restore Defaults) -->
+    <!-- Accordion Item 4: Settings (Theme, Sync Browser Mockup Theme, Vercel Blob Token) -->
     <section class="u-accordion-item" data-accordion-item="settings">
       <button type="button" class="u-accordion-trigger" data-accordion-trigger="settings">
         <span class="u-accordion-trigger-left">
           <svg class="u-accordion-icon" viewBox="0 0 256 256" fill="currentColor">
-            <path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm88-29.84q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.21,107.21,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.71,107.71,0,0,0-26.25-10.87,8,8,0,0,0-7.06,1.49L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.21,107.21,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06Zm-16.1-6.5a73.93,73.93,0,0,1,0,8.68,8,8,0,0,0,1.74,5.48l14.19,17.73a91.57,91.57,0,0,1-6.23,15L187,173.11a8,8,0,0,0-5.1,2.64,74.11,74.11,0,0,1-6.14,6.14,8,8,0,0,0-2.64,5.1l-2.51,22.58a91.32,91.32,0,0,1-15,6.23l-17.74-14.19a8,8,0,0,0-5-1.75h-.48a73.93,73.93,0,0,1-8.68,0,8,8,0,0,0-5.48,1.74L100.45,215.8a91.57,91.57,0,0,1-15-6.23L82.89,187a8,8,0,0,0-2.64-5.1,74.11,74.11,0,0,1-6.14-6.14,8,8,0,0,0-5.1-2.64L46.43,170.6a91.32,91.32,0,0,1-6.23-15l14.19-17.74a8,8,0,0,0,1.74-5.48,73.93,73.93,0,0,1,0-8.68,8,8,0,0,0-1.74-5.48L40.2,100.45a91.57,91.57,0,0,1,6.23-15L69,82.89a8,8,0,0,0,5.1-2.64,74.11,74.11,0,0,1,6.14-6.14A8,8,0,0,0,82.89,69L85.4,46.43a91.32,91.32,0,0,1,15-6.23l17.74,14.19a8,8,0,0,0,5.48,1.74,73.93,73.93,0,0,1,8.68,0,8,8,0,0,0,5.48-1.74L155.55,40.2a91.57,91.57,0,0,1,15,6.23L173.11,69a8,8,0,0,0,2.64,5.1,74.11,74.11,0,0,1,6.14,6.14,8,8,0,0,0,5.1,2.64l22.58,2.51a91.32,91.32,0,0,1,6.23,15l-14.19,17.74A8,8,0,0,0,199.9,123.66Z"/>
+            <path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm88-29.84q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.21,107.21,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.71,107.71,0,0,0-26.25-10.87,8,8,0,0,0-7.06,1.49L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.21,107.21,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06Zm-16.1-6.5a73.93,73.93,0,0,1,0,8.68,8,8,0,0,0,1.74,5.48l14.19,17.73a91.57,91.57,0,0,1-6.23,15L187,173.11a8,8,0,0,0-5.1,2.64,74.11,74.11,0,0,1-6.14,6.14,8,8,0,0,0-2.64,5.1l-2.51,22.58a91.32,91.32,0,0,1-15,6.23l-17.74-14.19a8,8,0,0,0-5-1.75h-.48a73.93,73.93,0,0,1-8.68,0,8,8,0,0,0-5.48,1.74L100.45,215.8a91.57,91.57,0,0,1-15-6.23L82.89,187a8,8,0,0,0-2.64-5.1,74.11,74.11,0,0,1-6.14-6.14,8,8,0,0,0-5.1-2.64L46.43,170.6a91.32,91.32,0,0,1-6.23-15l14.19-17.74a8,8,0,0,0,1.74-5.48,73.93,73.93,0,0,1,0-8.68,8,8,0,0,0-1.74-5.48L40.2,100.45a91.57,91.57,0,0,1,6.23-15L69,82.89a8,8,0,0,0,5.1-2.64,74.11,74.11,0,0,1-6.14-6.14A8,8,0,0,0,82.89,69L85.4,46.43a91.32,91.32,0,0,1,15-6.23l17.74,14.19a8,8,0,0,0,5.48,1.74,73.93,73.93,0,0,1,8.68,0,8,8,0,0,0,5.48-1.74L155.55,40.2a91.57,91.57,0,0,1,15,6.23L173.11,69a8,8,0,0,0,2.64,5.1,74.11,74.11,0,0,1,6.14,6.14,8,8,0,0,0,5.1,2.64l22.58,2.51a91.32,91.32,0,0,1,6.23,15l-14.19,17.74A8,8,0,0,0,199.9,123.66Z"/>
           </svg>
           <span>Settings</span>
         </span>
@@ -1083,19 +1132,6 @@
               <input id="blobTokenInput" type="password" class="u-input mono" placeholder="BLOB_READ_WRITE_TOKEN" />
             </div>
           </div>
-
-          <div class="u-settings-footer">
-            <button
-              id="btnRestoreDefaults"
-              type="button"
-              class="u-btn u-btn-soft u-btn-xs"
-            >
-              <svg width="12" height="12" viewBox="0 0 256 256" fill="currentColor">
-                <path d="M224,128a96,96,0,0,1-94.71,96H128A95.38,95.38,0,0,1,62.1,197.8a8,8,0,0,1,11-11.63A80,80,0,1,0,71.43,71.39a3.07,3.07,0,0,1-.26.25L44.59,96H72a8,8,0,0,1,0,16H24a8,8,0,0,1-8-8V56a8,8,0,0,1,16,0V85.8L59.84,60A96,96,0,0,1,224,128Z"/>
-              </svg>
-              Restore to defaults
-            </button>
-          </div>
         </div>
       </div>
     </section>
@@ -1118,7 +1154,7 @@
         class="u-status-close"
         aria-label="Close notification"
       >
-        <svg width="12" height="12" viewBox="0 0 256 256" fill="currentColor">
+        <svg width="13" height="13" viewBox="0 0 256 256" fill="currentColor">
           <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/>
         </svg>
       </button>
