@@ -165,7 +165,7 @@ export async function frameScreenshot({
   title = 'Installation - Skriptjobs',
   bg = null, // null uses manifest.defaultId
   marginMode = 'reference',
-  fitReferenceSize = true,
+  fitReferenceSize = false,
   outputPath = null,
 }) {
   const T = CHROME_MOCKUP_THEME;
@@ -173,10 +173,10 @@ export async function frameScreenshot({
 
   const vpMeta = await sharp(input).metadata();
   const innerW = fitReferenceSize
-    ? T.referenceWindow.width - 4 // 1561
+    ? T.referenceWindow.width - 4
     : vpMeta.width;
   const innerVpH = fitReferenceSize
-    ? T.referenceWindow.height - 4 - T.header.totalHeight // 888
+    ? Math.round(vpMeta.height * (innerW / vpMeta.width))
     : vpMeta.height;
 
   const winW = innerW + 4; // 1565

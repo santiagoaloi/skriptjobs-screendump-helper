@@ -261,16 +261,18 @@ export async function renderFramedScreenshotToCanvas({
   title = 'Installation - Skriptjobs',
   faviconDataUrl = null,
   marginMode = 'reference',
-  fitReferenceSize = true,
+  fitReferenceSize = false,
+  viewportCssWidth = null,
 }) {
   const T = CHROME_MOCKUP_THEME;
   const margins = T.margins[marginMode] || T.margins.reference;
 
-  const winW = fitReferenceSize ? T.referenceWindow.width : viewportImage.width + 4;
-  const vpW = winW - 4;
-  const vpH = fitReferenceSize
-    ? T.referenceWindow.height - T.header.totalHeight - 4
-    : Math.round(viewportImage.height * (vpW / viewportImage.width));
+  // Never stretch or deform the screenshot: always preserve the exact aspect ratio of viewportImage.
+  const vpW = fitReferenceSize
+    ? T.referenceWindow.width - 4
+    : (viewportCssWidth || viewportImage.width);
+  const vpH = Math.round(viewportImage.height * (vpW / viewportImage.width));
+  const winW = vpW + 4;
   const winH = T.header.totalHeight + vpH + 4;
 
   const totalW = winW + margins.left + margins.right;

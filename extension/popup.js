@@ -48,6 +48,7 @@ let customWallpapers = [];
 let defaultWallpaperId = 'macos-default';
 let selectedWallpaperId = 'macos-default';
 let viewportImage = null;
+let viewportCssWidth = null;
 
 // Single-open collapsible accordion controller (only one open at a time)
 function setActiveAccordionItem(targetKey, toggleIfSame = true) {
@@ -226,8 +227,13 @@ async function redrawPreview() {
     url: urlInput.value,
     title: titleInput.value,
     marginMode: 'reference',
-    fitReferenceSize: true,
+    fitReferenceSize: false,
+    viewportCssWidth,
   });
+  const dimensionsBadge = document.getElementById('dimensionsBadge');
+  if (dimensionsBadge) {
+    dimensionsBadge.textContent = `${previewCanvas.width} × ${previewCanvas.height} px`;
+  }
 }
 
 async function init() {
@@ -256,6 +262,7 @@ async function init() {
       if (tab && tab.url && !tab.url.startsWith('chrome-extension://') && !tab.url.startsWith('file://')) {
         urlInput.value = tab.url;
         titleInput.value = tab.title || 'Skriptjobs';
+        viewportCssWidth = tab.width || null;
         const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
         viewportImage = await loadImage(dataUrl);
         await redrawPreview();
@@ -328,7 +335,7 @@ btnCopyClipboard.addEventListener('click', async () => {
   try {
     const blob = await canvasToBlob(previewCanvas);
     await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-    setStatus('Copied framed PNG (1711×1076) to clipboard!', 'success');
+    setStatus(`Copied framed PNG (${previewCanvas.width}×${previewCanvas.height}) to clipboard!`, 'success');
   } catch (err) {
     setStatus(`Clipboard error: ${err.message}`, 'error');
   }

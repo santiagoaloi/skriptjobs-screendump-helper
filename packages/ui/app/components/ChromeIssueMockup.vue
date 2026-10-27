@@ -25,7 +25,7 @@ const props = withDefaults(
     url: 'https://docs.skriptjobs.localhost:3050/getting-started/installation',
     title: 'Installation - Skriptjobs',
     marginMode: 'reference',
-    fitReferenceSize: true,
+    fitReferenceSize: false,
   }
 )
 
