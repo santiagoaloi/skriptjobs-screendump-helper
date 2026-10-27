@@ -1,70 +1,125 @@
-import { renderFramedScreenshotToCanvas } from './shared/frame-renderer.js';
+import { renderFramedIssueCanvas } from "./shared/frame-renderer.js";
+import { createZipBlob } from "./shared/zip-builder.js";
+import { startOperationLog, appendLogEvent, finishOperationLog } from "./shared/logger.js";
 
+const DEFAULT_WALLPAPER_URL = "assets/default-wallpaper.jpg";
+const SKRIPTJOBS_LOGO_URL = "assets/brand/logo-color.svg";
+const WORDMARK_DARK_URL = "assets/brand/wordmark-dark.svg";
+const WORDMARK_LIGHT_URL = "assets/brand/wordmark-light.svg";
+
+/**
+ * Built-in wallpaper library presets so users have multiple options out of the box
+ * and can also upload any number of custom wallpapers or restore defaults anytime.
+ */
 const BUILTIN_WALLPAPERS = [
   {
-    id: 'macos-default',
-    name: 'macOS Default',
-    src: 'assets/backgrounds/macos-default.png',
+    id: "macos-default",
+    name: "macOS Default",
+    type: "image",
+    src: DEFAULT_WALLPAPER_URL,
     builtin: true,
   },
   {
-    id: 'skriptjobs-indigo',
-    name: 'Skriptjobs Indigo',
-    src: 'assets/backgrounds/skriptjobs-indigo.png',
+    id: "skriptjobs-indigo",
+    name: "Skriptjobs Indigo",
+    type: "gradient",
+    colors: ["#1e1b4b", "#312e81", "#4c1d95"],
     builtin: true,
   },
   {
-    id: 'nordic-teal',
-    name: 'Nordic Teal',
-    src: 'assets/backgrounds/nordic-teal.png',
+    id: "nordic-teal",
+    name: "Nordic Teal",
+    type: "gradient",
+    colors: ["#042f2e", "#115e59", "#0f172a"],
     builtin: true,
   },
   {
-    id: 'midnight-slate',
-    name: 'Midnight Slate',
-    src: 'assets/backgrounds/midnight-slate.png',
+    id: "midnight-slate",
+    name: "Midnight Slate",
+    type: "gradient",
+    colors: ["#09090b", "#18181b", "#27272a"],
     builtin: true,
   },
 ];
 
-const previewCanvas = document.getElementById('previewCanvas');
-const btnOpenFullTab = document.getElementById('btnOpenFullTab');
-const brandWordmark = document.getElementById('brandWordmark');
-const urlInput = document.getElementById('urlInput');
-const titleInput = document.getElementById('titleInput');
-const blobTokenInput = document.getElementById('blobTokenInput');
-const syncMockupSwitch = document.getElementById('syncMockupSwitch');
-const wallpaperGallery = document.getElementById('wallpaperGallery');
-const multiWallpaperInput = document.getElementById('multiWallpaperInput');
-const btnUploadWallpapers = document.getElementById('btnUploadWallpapers');
-const btnCopyClipboard = document.getElementById('btnCopyClipboard');
-const btnDownloadPng = document.getElementById('btnDownloadPng');
-const btnUploadBlob = document.getElementById('btnUploadBlob');
-const statusBox = document.getElementById('statusBox');
-const statusText = document.getElementById('statusText');
-const btnCloseStatus = document.getElementById('btnCloseStatus');
-const accordionItems = Array.from(document.querySelectorAll('.u-accordion-item'));
-const themeButtons = Array.from(document.querySelectorAll('[data-theme-value]'));
+function cloneBuiltinWallpapers() {
+  return BUILTIN_WALLPAPERS.map((w) => ({ ...w }));
+}
 
-const STAR_FILLED_SVG = `<svg width="12" height="12" viewBox="0 0 256 256" fill="currentColor"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"/></svg>`;
-const DOTS_THREE_SVG = `<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M140,128a12,12,0,1,1-12-12A12,12,0,0,1,140,128ZM128,72a12,12,0,1,0-12-12A12,12,0,0,0,128,72Zm0,112a12,12,0,1,0,12,12A12,12,0,0,0,128,184Z"/></svg>`;
-const ICON_PENCIL_SVG = `<svg viewBox="0 0 256 256" fill="currentColor"><path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.68,147.31,64l24-24L216,84.68Z"/></svg>`;
-const ICON_TRASH_SVG = `<svg viewBox="0 0 256 256" fill="currentColor"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"/></svg>`;
-const ICON_STAR_SVG = `<svg viewBox="0 0 256 256" fill="currentColor"><path d="M239.18,97.26A16.38,16.38,0,0,0,224.92,86l-59-4.76L143.14,26.15a16.36,16.36,0,0,0-30.27,0L90.11,81.23,31.08,86a16.46,16.46,0,0,0-9.37,28.86l45,38.83L53,211.75a16.38,16.38,0,0,0,24.5,17.82L128,198.49l50.53,31.08A16.4,16.4,0,0,0,203,211.75l-13.76-58.07,45-38.83A16.43,16.43,0,0,0,239.18,97.26Z"/></svg>`;
+const previewCanvas = document.getElementById("previewCanvas");
+const dimensionsBadge = document.getElementById("dimensionsBadge");
+const wallpaperGallery = document.getElementById("wallpaperGallery");
+const multiWallpaperInput = document.getElementById("multiWallpaperInput");
+const btnUploadWallpapers = document.getElementById("btnUploadWallpapers");
+const btnRestoreWallpapers = document.getElementById("btnRestoreWallpapers");
+const btnRestoreDefaults = document.getElementById("btnRestoreDefaults");
+const btnOpenFullTab = document.getElementById("btnOpenFullTab");
+const btnOpenFullTabOps = document.getElementById("btnOpenFullTabOps");
+const urlInput = document.getElementById("urlInput");
+const titleInput = document.getElementById("titleInput");
+const blobTokenInput = document.getElementById("blobTokenInput");
+const btnUploadBlob = document.getElementById("btnUploadBlob");
+const btnCopyClipboard = document.getElementById("btnCopyClipboard");
+const btnDownloadPng = document.getElementById("btnDownloadPng");
+const btnDownloadThemeZip = document.getElementById("btnDownloadThemeZip");
+const statusBox = document.getElementById("statusBox");
+const statusText = document.getElementById("statusText");
+const btnUndoStatus = document.getElementById("btnUndoStatus");
+const btnCloseStatus = document.getElementById("btnCloseStatus");
+const brandWordmark = document.getElementById("brandWordmark");
+const themeSegmented = document.getElementById("themeSegmented");
+const syncMockupSwitch = document.getElementById("syncMockupSwitch");
+const mainAccordion = document.getElementById("mainAccordion");
 
-let wallpapersList = [...BUILTIN_WALLPAPERS];
-let defaultWallpaperId = 'macos-default';
-let selectedWallpaperId = 'macos-default';
-let themeMode = 'system'; // 'system' | 'dark' | 'light'
+let rawScreenshotImage = null;
+let skriptjobsLogoImage = null;
+let wallpapersList = [];
+let selectedWallpaperId = "macos-default";
+let defaultWallpaperId = "macos-default";
+let activeAccordionId = "wallpapers";
+let themeMode = "system"; // "system" | "dark" | "light"
 let syncMockupTheme = true;
-let viewportImage = null;
-let viewportCssWidth = null;
-let openDropdownWpId = null;
-let renamingWpId = null;
-let currentLogs = [];
+let openMenuWallpaperId = null;
+let renamingWallpaperId = null;
+let initialTabUrl = "https://docs.skriptjobs.localhost:3050/getting-started/installation";
+let initialTabTitle = "Installation - Skriptjobs";
+let currentUndoHandler = null;
 
 const imageCache = new Map();
-const systemDarkMedia = window.matchMedia('(prefers-color-scheme: dark)');
+const systemDarkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+function setStatus(message, type = "info", options = {}) {
+  statusText.textContent = message;
+  statusBox.className = `u-status visible ${type}`;
+  if (typeof options.onUndo === "function") {
+    currentUndoHandler = options.onUndo;
+    btnUndoStatus.textContent = options.undoLabel || "Undo";
+    btnUndoStatus.classList.add("visible");
+  } else {
+    currentUndoHandler = null;
+    btnUndoStatus.classList.remove("visible");
+  }
+}
+
+function hideStatus() {
+  statusBox.className = "u-status";
+  statusText.textContent = "";
+  currentUndoHandler = null;
+  btnUndoStatus.classList.remove("visible");
+}
+
+btnUndoStatus.addEventListener("click", async () => {
+  if (typeof currentUndoHandler === "function") {
+    const fn = currentUndoHandler;
+    currentUndoHandler = null;
+    btnUndoStatus.classList.remove("visible");
+    await fn();
+  }
+});
+
+btnCloseStatus.addEventListener("click", () => {
+  hideStatus();
+});
 
 function debounce(fn, delayMs = 280) {
   let timer = null;
@@ -77,139 +132,105 @@ function debounce(fn, delayMs = 280) {
   };
 }
 
-function getResolvedDark() {
-  return themeMode === 'dark' || (themeMode === 'system' && systemDarkMedia.matches);
+function resolveEffectiveTheme(mode) {
+  if (mode === "light" || mode === "dark") {
+    return mode;
+  }
+  return systemDarkQuery.matches ? "dark" : "light";
 }
 
-function getEffectiveMockupTheme() {
-  if (!syncMockupTheme) return 'dark';
-  return getResolvedDark() ? 'dark' : 'light';
+function resolveMockupTheme() {
+  if (!syncMockupTheme) {
+    return "dark";
+  }
+  return resolveEffectiveTheme(themeMode);
 }
 
-// Loom-style structured extension logs stored in chrome.storage.local (replaced on each new operation)
-function createLogEntry(level, message, context = {}) {
-  return {
-    level,
-    message,
-    context: {
-      ...context,
-      timestamp: new Date().toISOString(),
-    },
-  };
-}
-
-async function replaceOperationLogs(level, message, context = {}) {
-  currentLogs = [createLogEntry(level, message, context)];
-  await writeStorage({ extensionLogs: currentLogs });
-}
-
-async function appendOperationLog(level, message, context = {}) {
-  currentLogs = [...currentLogs, createLogEntry(level, message, context)];
-  await writeStorage({ extensionLogs: currentLogs });
-}
-
-function applyTheme(mode) {
-  themeMode = ['system', 'dark', 'light'].includes(mode) ? mode : 'system';
-  const resolvedDark = getResolvedDark();
-
+/**
+ * Apply @nuxt/ui + @skriptjobs/ui color mode to root <html> and swap brand wordmark.
+ */
+function applyTheme(mode, shouldRedraw = true) {
+  themeMode = mode;
+  const effective = resolveEffectiveTheme(mode);
   const root = document.documentElement;
-  root.classList.toggle('dark', resolvedDark);
-  root.classList.toggle('light', !resolvedDark);
+  root.classList.remove("dark", "light");
+  root.classList.add(effective);
 
-  if (brandWordmark) {
-    brandWordmark.src = resolvedDark
-      ? 'assets/brand/wordmark-dark.svg'
-      : 'assets/brand/wordmark-light.svg';
-  }
+  // Wordmark-dark has light text for dark surfaces; wordmark-light has dark text for light surfaces
+  brandWordmark.src = effective === "dark" ? WORDMARK_DARK_URL : WORDMARK_LIGHT_URL;
 
-  for (const btn of themeButtons) {
-    const val = btn.getAttribute('data-theme-value');
-    btn.classList.toggle('active', val === themeMode);
-    btn.setAttribute('aria-checked', String(val === themeMode));
+  const buttons = themeSegmented.querySelectorAll("[data-theme-value]");
+  buttons.forEach((btn) => {
+    const isSelected = btn.getAttribute("data-theme-value") === mode;
+    btn.classList.toggle("active", isSelected);
+    btn.setAttribute("aria-checked", isSelected ? "true" : "false");
+  });
+
+  if (shouldRedraw && rawScreenshotImage) {
+    redrawPreview();
   }
 }
 
-function applySyncMockupSwitch(enabled) {
+function applySyncMockupSwitch(enabled, shouldRedraw = true) {
   syncMockupTheme = Boolean(enabled);
-  if (syncMockupSwitch) {
-    syncMockupSwitch.setAttribute('aria-checked', String(syncMockupTheme));
+  syncMockupSwitch.setAttribute("aria-checked", syncMockupTheme ? "true" : "false");
+  if (shouldRedraw && rawScreenshotImage) {
+    redrawPreview();
   }
 }
 
-systemDarkMedia.addEventListener('change', async () => {
-  if (themeMode === 'system') {
-    applyTheme('system');
-    if (syncMockupTheme) {
-      await redrawPreview();
-    }
+systemDarkQuery.addEventListener("change", () => {
+  if (themeMode === "system") {
+    applyTheme("system", true);
   }
 });
 
-for (const btn of themeButtons) {
-  btn.addEventListener('click', async () => {
-    const nextMode = btn.getAttribute('data-theme-value') || 'system';
-    applyTheme(nextMode);
-    await writeStorage({ themeMode: nextMode });
-    await replaceOperationLogs(
-      'info',
-      { integration: 'screendump-helper', event: 'theme_changed' },
-      { themeMode: nextMode, mockupTheme: getEffectiveMockupTheme() }
-    );
-    if (syncMockupTheme) {
-      await redrawPreview();
-    }
-  });
-}
-
-syncMockupSwitch?.addEventListener('click', async () => {
-  applySyncMockupSwitch(!syncMockupTheme);
-  await writeStorage({ syncMockupTheme });
-  await replaceOperationLogs(
-    'info',
-    { integration: 'screendump-helper', event: 'mockup_theme_sync_toggled' },
-    { syncMockupTheme, mockupTheme: getEffectiveMockupTheme() }
-  );
-  await redrawPreview();
-});
-
-// Single-open collapsible accordion controller (only one open at a time)
-function setActiveAccordionItem(targetKey, toggleIfSame = true) {
-  for (const item of accordionItems) {
-    const key = item.getAttribute('data-accordion-item');
-    if (key === targetKey) {
-      if (toggleIfSame && item.classList.contains('open')) {
-        item.classList.remove('open');
-      } else {
-        item.classList.add('open');
-      }
+/**
+ * Single-open collapsible accordion controller (only 1 item open at a time)
+ */
+function setOpenAccordion(itemId) {
+  const items = mainAccordion.querySelectorAll("[data-accordion-item]");
+  items.forEach((section) => {
+    const id = section.getAttribute("data-accordion-item");
+    if (id === itemId) {
+      section.classList.toggle("open");
     } else {
-      item.classList.remove('open');
+      section.classList.remove("open");
     }
-  }
-}
-
-for (const item of accordionItems) {
-  const trigger = item.querySelector('.u-accordion-trigger');
-  const key = item.getAttribute('data-accordion-item');
-  trigger?.addEventListener('click', () => {
-    setActiveAccordionItem(key, true);
   });
+  const currentlyOpen = mainAccordion.querySelector(".u-accordion-item.open");
+  activeAccordionId = currentlyOpen ? currentlyOpen.getAttribute("data-accordion-item") : "";
 }
 
-function setStatus(msg, type = 'info') {
-  if (statusText) {
-    statusText.textContent = msg;
-  }
-  statusBox.className = `u-status visible ${type}`;
-}
-
-btnCloseStatus?.addEventListener('click', () => {
-  statusBox.classList.remove('visible');
+mainAccordion.addEventListener("click", (e) => {
+  const trigger = e.target.closest("[data-accordion-trigger]");
+  if (!trigger) return;
+  const targetId = trigger.getAttribute("data-accordion-trigger");
+  setOpenAccordion(targetId);
 });
 
-function getAllWallpapers() {
-  return wallpapersList;
-}
+themeSegmented.addEventListener("click", async (e) => {
+  const optionBtn = e.target.closest("[data-theme-value]");
+  if (!optionBtn) return;
+  const nextMode = optionBtn.getAttribute("data-theme-value");
+  applyTheme(nextMode, true);
+  await saveSettings();
+  await appendLogEvent("theme:change", { themeMode: nextMode, effectiveTheme: resolveEffectiveTheme(nextMode) });
+});
+
+syncMockupSwitch.addEventListener("click", async () => {
+  applySyncMockupSwitch(!syncMockupTheme, true);
+  await saveSettings();
+  await appendLogEvent("settings:syncMockupTheme", { syncMockupTheme });
+});
+
+// Close 3-dots wallpaper dropdown when clicking outside
+document.addEventListener("click", (e) => {
+  if (openMenuWallpaperId && !e.target.closest(".wp-menu-btn") && !e.target.closest(".wp-dropdown")) {
+    openMenuWallpaperId = null;
+    renderWallpaperGallery();
+  }
+});
 
 function loadImage(src) {
   if (imageCache.has(src)) {
@@ -217,7 +238,7 @@ function loadImage(src) {
   }
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = "anonymous";
     img.onload = () => {
       imageCache.set(src, img);
       resolve(img);
@@ -227,546 +248,678 @@ function loadImage(src) {
   });
 }
 
-async function readStorage(keys) {
-  if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-    return await chrome.storage.local.get(keys);
-  }
-  const out = {};
-  for (const k of keys) {
-    const raw = localStorage.getItem(`sj_${k}`);
-    if (raw) {
-      try {
-        out[k] = JSON.parse(raw);
-      } catch {
-        out[k] = raw;
-      }
-    }
-  }
-  return out;
+function createGradientDataUrl(colors, width = 640, height = 400) {
+  const c = document.createElement("canvas");
+  c.width = width;
+  c.height = height;
+  const ctx = c.getContext("2d");
+  const grad = ctx.createLinearGradient(0, 0, width, height);
+  colors.forEach((col, i) => {
+    grad.addColorStop(i / Math.max(1, colors.length - 1), col);
+  });
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, width, height);
+  return c.toDataURL("image/png");
 }
 
-async function writeStorage(obj) {
-  if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-    await chrome.storage.local.set(obj);
-    return;
+async function resolveWallpaperImage(wp) {
+  if (!wp) return null;
+  if (wp.type === "gradient") {
+    const dataUrl = createGradientDataUrl(wp.colors, 1920, 1200);
+    return loadImage(dataUrl);
   }
-  for (const [k, v] of Object.entries(obj)) {
-    localStorage.setItem(`sj_${k}`, JSON.stringify(v));
+  return loadImage(wp.src);
+}
+
+async function loadSettings() {
+  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(
+        [
+          "blobReadWriteToken",
+          "customWallpapers",
+          "wallpapersState",
+          "defaultWallpaperId",
+          "selectedWallpaperId",
+          "themeMode",
+          "syncMockupTheme",
+        ],
+        (res) => resolve(res || {})
+      );
+    });
+  }
+  try {
+    return JSON.parse(localStorage.getItem("skriptjobs_capture_settings") || "{}");
+  } catch {
+    return {};
   }
 }
 
-// Close 3-dots dropdown when clicking outside
-document.addEventListener('click', (e) => {
-  if (openDropdownWpId && !e.target.closest('.wp-corner-actions')) {
-    openDropdownWpId = null;
-    renderWallpaperGallery();
+async function saveSettings(extra = {}) {
+  const customWallpapers = wallpapersList.filter((w) => !w.builtin);
+  const payload = {
+    blobReadWriteToken: blobTokenInput.value.trim(),
+    customWallpapers,
+    wallpapersState: wallpapersList,
+    defaultWallpaperId,
+    selectedWallpaperId,
+    themeMode,
+    syncMockupTheme,
+    ...extra,
+  };
+  if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+    return new Promise((resolve) => chrome.storage.local.set(payload, resolve));
   }
-});
+  localStorage.setItem("skriptjobs_capture_settings", JSON.stringify(payload));
+}
 
 function renderWallpaperGallery() {
-  const all = getAllWallpapers();
-  wallpaperGallery.innerHTML = '';
-
-  for (const wp of all) {
+  wallpaperGallery.innerHTML = "";
+  for (const wp of wallpapersList) {
     const isSelected = wp.id === selectedWallpaperId;
     const isDefault = wp.id === defaultWallpaperId;
-    const isMenuOpen = wp.id === openDropdownWpId;
-    const isRenaming = wp.id === renamingWpId;
+    const isMenuOpen = wp.id === openMenuWallpaperId;
+    const isRenaming = wp.id === renamingWallpaperId;
 
-    const item = document.createElement('div');
-    item.className = `wp-item ${isSelected ? 'active' : ''}`;
-    item.setAttribute('data-wp-id', wp.id);
-    item.addEventListener('click', async (e) => {
-      if (e.target.closest('.wp-corner-actions') || e.target.closest('.wp-rename-input')) {
-        return;
-      }
-      selectedWallpaperId = wp.id;
-      openDropdownWpId = null;
-      renderWallpaperGallery();
-      await redrawPreview();
-    });
+    const item = document.createElement("div");
+    item.className = `wp-item ${isSelected ? "active" : ""} ${isMenuOpen ? "menu-open" : ""}`.trim();
+    item.dataset.wallpaperId = wp.id;
 
-    const thumb = document.createElement('img');
-    thumb.className = 'wp-thumb';
-    thumb.src = wp.src;
+    const thumbSrc = wp.type === "gradient" ? createGradientDataUrl(wp.colors, 160, 100) : wp.src;
+    const thumb = document.createElement("img");
+    thumb.className = "wp-thumb";
+    thumb.src = thumbSrc;
     thumb.alt = wp.name;
 
-    const meta = document.createElement('div');
-    meta.className = 'wp-meta';
+    const meta = document.createElement("div");
+    meta.className = "wp-meta";
 
     if (isRenaming) {
-      const renameInput = document.createElement('input');
-      renameInput.type = 'text';
-      renameInput.className = 'wp-rename-input';
-      renameInput.value = wp.name;
-      renameInput.setAttribute('aria-label', 'Change image name');
-
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "wp-rename-input";
+      input.value = wp.name;
+      input.setAttribute("aria-label", "Wallpaper name");
+      input.addEventListener("click", (ev) => ev.stopPropagation());
       const commitRename = async () => {
-        if (renamingWpId !== wp.id) return;
-        const nextName = renameInput.value.trim() || wp.name;
-        const prevName = wp.name;
-        wp.name = nextName;
-        renamingWpId = null;
-        await writeStorage({ wallpapersList });
-        renderWallpaperGallery();
-        if (nextName !== prevName) {
-          setStatus(`Renamed wallpaper to "${nextName}".`, 'success');
-          await replaceOperationLogs(
-            'info',
-            { integration: 'screendump-helper', event: 'wallpaper_renamed' },
-            { id: wp.id, previousName: prevName, newName: nextName }
-          );
+        const trimmed = input.value.trim();
+        if (trimmed && trimmed !== wp.name) {
+          const oldName = wp.name;
+          wp.name = trimmed;
+          await saveSettings();
+          await appendLogEvent("wallpaper:rename", { id: wp.id, oldName, newName: trimmed });
+          setStatus(`Renamed wallpaper to "${trimmed}".`, "success");
         }
+        renamingWallpaperId = null;
+        renderWallpaperGallery();
       };
-
-      renameInput.addEventListener('keydown', async (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          await commitRename();
-        } else if (e.key === 'Escape') {
-          e.preventDefault();
-          renamingWpId = null;
+      input.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          commitRename();
+        } else if (ev.key === "Escape") {
+          ev.preventDefault();
+          renamingWallpaperId = null;
           renderWallpaperGallery();
         }
       });
-      renameInput.addEventListener('blur', commitRename);
-      meta.appendChild(renameInput);
+      input.addEventListener("blur", commitRename);
+      meta.appendChild(input);
       setTimeout(() => {
-        renameInput.focus();
-        renameInput.select();
+        input.focus();
+        input.select();
       }, 0);
     } else {
-      const nameEl = document.createElement('div');
-      nameEl.className = 'wp-name';
+      const nameEl = document.createElement("div");
+      nameEl.className = "wp-name";
       nameEl.textContent = wp.name;
       meta.appendChild(nameEl);
     }
 
-    // Right actions: Default star indicator (when default) + 3-dots menu button + dropdown
-    const cornerActions = document.createElement('div');
-    cornerActions.className = 'wp-corner-actions';
+    const actions = document.createElement("div");
+    actions.className = "wp-corner-actions";
 
+    // Subtle default star indicator when this card is the default wallpaper
     if (isDefault) {
-      const starBadge = document.createElement('span');
-      starBadge.className = 'wp-default-indicator tooltip-right';
-      starBadge.setAttribute('data-tooltip', 'Default wallpaper');
-      starBadge.innerHTML = STAR_FILLED_SVG;
-      cornerActions.appendChild(starBadge);
+      const starSpan = document.createElement("span");
+      starSpan.className = "wp-default-indicator";
+      starSpan.title = "Default wallpaper";
+      starSpan.innerHTML = `<svg width="12" height="12" viewBox="0 0 256 256" fill="currentColor"><path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"/></svg>`;
+      actions.appendChild(starSpan);
     }
 
-    const btnMenu = document.createElement('button');
-    btnMenu.type = 'button';
-    btnMenu.className = `wp-menu-btn ${isMenuOpen ? 'active' : ''}`;
-    btnMenu.setAttribute('aria-label', 'Wallpaper actions');
-    btnMenu.setAttribute('aria-expanded', String(isMenuOpen));
-    btnMenu.innerHTML = DOTS_THREE_SVG;
-    btnMenu.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openDropdownWpId = isMenuOpen ? null : wp.id;
+    // 3-dots menu button
+    const menuBtn = document.createElement("button");
+    menuBtn.type = "button";
+    menuBtn.className = `wp-menu-btn ${isMenuOpen ? "active" : ""}`;
+    menuBtn.setAttribute("aria-label", `Wallpaper options for ${wp.name}`);
+    menuBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 256 256" fill="currentColor"><path d="M140,128a12,12,0,1,1-12-12A12,12,0,0,1,140,128ZM128,72a12,12,0,1,0-12-12A12,12,0,0,0,128,72Zm0,112a12,12,0,1,0,12,12A12,12,0,0,0,128,184Z"/></svg>`;
+    menuBtn.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      openMenuWallpaperId = isMenuOpen ? null : wp.id;
       renderWallpaperGallery();
     });
-    cornerActions.appendChild(btnMenu);
+    actions.appendChild(menuBtn);
 
-    // Dropdown with 1-Change image name, 2-Remove image, 3-Set as default
-    const dropdown = document.createElement('div');
-    dropdown.className = `wp-dropdown ${isMenuOpen ? 'open' : ''}`;
-    dropdown.setAttribute('role', 'menu');
+    // 3-dots dropdown menu appended directly to `.wp-item` so it matches the exact width of the image card
+    const dropdown = document.createElement("div");
+    dropdown.className = `wp-dropdown ${isMenuOpen ? "open" : ""}`;
+    dropdown.addEventListener("click", (ev) => ev.stopPropagation());
 
     // 1. Change image name
-    const btnRename = document.createElement('button');
-    btnRename.type = 'button';
-    btnRename.className = 'wp-dropdown-item';
-    btnRename.setAttribute('role', 'menuitem');
-    btnRename.innerHTML = `${ICON_PENCIL_SVG}<span>Change image name</span>`;
-    btnRename.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openDropdownWpId = null;
-      renamingWpId = wp.id;
+    const renameOption = document.createElement("button");
+    renameOption.type = "button";
+    renameOption.className = "wp-dropdown-item";
+    renameOption.innerHTML = `
+      <svg viewBox="0 0 256 256" fill="currentColor">
+        <path d="M227.31,73.37,182.63,28.68a16,16,0,0,0-22.63,0L36.69,152A15.86,15.86,0,0,0,32,163.31V208a16,16,0,0,0,16,16H92.69A15.86,15.86,0,0,0,104,219.31L227.31,96a16,16,0,0,0,0-22.63ZM92.69,208H48V163.31l88-88L180.69,120ZM192,108.68,147.31,64l24-24L216,84.68Z"/>
+      </svg>
+      <span>Change image name</span>
+    `;
+    renameOption.addEventListener("click", () => {
+      openMenuWallpaperId = null;
+      renamingWallpaperId = wp.id;
       renderWallpaperGallery();
     });
-    dropdown.appendChild(btnRename);
+    dropdown.appendChild(renameOption);
 
-    // 2. Remove image
-    const btnRemove = document.createElement('button');
-    btnRemove.type = 'button';
-    btnRemove.className = 'wp-dropdown-item';
-    btnRemove.setAttribute('role', 'menuitem');
-    btnRemove.innerHTML = `${ICON_TRASH_SVG}<span>Remove image</span>`;
-    btnRemove.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      openDropdownWpId = null;
+    // 2. Remove image (with Undo support in notification bar)
+    const removeOption = document.createElement("button");
+    removeOption.type = "button";
+    removeOption.className = "wp-dropdown-item";
+    removeOption.innerHTML = `
+      <svg viewBox="0 0 256 256" fill="currentColor">
+        <path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"/>
+      </svg>
+      <span>Remove image</span>
+    `;
+    removeOption.addEventListener("click", async () => {
+      openMenuWallpaperId = null;
       if (wallpapersList.length <= 1) {
-        setStatus('At least one wallpaper must remain.', 'error');
-        await replaceOperationLogs(
-          'warn',
-          'Cannot remove the last remaining wallpaper',
-          { id: wp.id, name: wp.name }
-        );
+        setStatus("At least one wallpaper must remain in the gallery.", "error");
         renderWallpaperGallery();
         return;
       }
-      wallpapersList = wallpapersList.filter((itemWp) => itemWp.id !== wp.id);
+      const removedIndex = wallpapersList.findIndex((w) => w.id === wp.id);
+      const removedWallpaper = { ...wp };
+      const prevSelectedId = selectedWallpaperId;
+      const prevDefaultId = defaultWallpaperId;
+
+      wallpapersList = wallpapersList.filter((w) => w.id !== wp.id);
       if (defaultWallpaperId === wp.id) {
         defaultWallpaperId = wallpapersList[0].id;
       }
       if (selectedWallpaperId === wp.id) {
         selectedWallpaperId = defaultWallpaperId;
       }
-      await writeStorage({ wallpapersList, defaultWallpaperId });
+      await saveSettings();
       renderWallpaperGallery();
       await redrawPreview();
-      setStatus(`Removed wallpaper "${wp.name}".`, 'info');
-      await replaceOperationLogs(
-        'info',
-        { integration: 'screendump-helper', event: 'wallpaper_removed' },
-        { id: wp.id, name: wp.name }
-      );
+      await appendLogEvent("wallpaper:remove", { id: wp.id, name: wp.name });
+
+      setStatus(`Removed wallpaper "${removedWallpaper.name}".`, "info", {
+        undoLabel: "Undo",
+        onUndo: async () => {
+          const insertAt = Math.min(Math.max(0, removedIndex), wallpapersList.length);
+          wallpapersList.splice(insertAt, 0, removedWallpaper);
+          selectedWallpaperId = prevSelectedId;
+          defaultWallpaperId = prevDefaultId;
+          await saveSettings();
+          renderWallpaperGallery();
+          await redrawPreview();
+          await appendLogEvent("wallpaper:undoRemove", { id: removedWallpaper.id, name: removedWallpaper.name });
+          setStatus(`Restored wallpaper "${removedWallpaper.name}".`, "success");
+        },
+      });
     });
-    dropdown.appendChild(btnRemove);
+    dropdown.appendChild(removeOption);
 
     // 3. Set as default
-    const btnSetDefault = document.createElement('button');
-    btnSetDefault.type = 'button';
-    btnSetDefault.className = 'wp-dropdown-item';
-    btnSetDefault.setAttribute('role', 'menuitem');
-    btnSetDefault.innerHTML = `${ICON_STAR_SVG}<span>Set as default</span>`;
-    btnSetDefault.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      openDropdownWpId = null;
+    const defaultOption = document.createElement("button");
+    defaultOption.type = "button";
+    defaultOption.className = "wp-dropdown-item";
+    defaultOption.innerHTML = `
+      <svg viewBox="0 0 256 256" fill="currentColor">
+        <path d="M234.29,114.85l-45,38.83L203,211.75a16.4,16.4,0,0,1-24.5,17.82L128,198.49,77.47,229.57A16.4,16.4,0,0,1,53,211.75l13.76-58.07-45-38.83A16.46,16.46,0,0,1,31.08,86l59-4.76,22.76-55.08a16.36,16.36,0,0,1,30.27,0l22.75,55.08,59,4.76a16.46,16.46,0,0,1,9.37,28.86Z"/>
+      </svg>
+      <span>${isDefault ? "Default wallpaper" : "Set as default"}</span>
+    `;
+    defaultOption.addEventListener("click", async () => {
+      openMenuWallpaperId = null;
       defaultWallpaperId = wp.id;
       selectedWallpaperId = wp.id;
-      await writeStorage({ defaultWallpaperId });
+      await saveSettings();
       renderWallpaperGallery();
       await redrawPreview();
-      setStatus(`Set "${wp.name}" as default wallpaper.`, 'success');
-      await replaceOperationLogs(
-        'info',
-        { integration: 'screendump-helper', event: 'wallpaper_set_default' },
-        { id: wp.id, name: wp.name }
-      );
+      await appendLogEvent("wallpaper:setDefault", { id: wp.id, name: wp.name });
+      setStatus(`"${wp.name}" set as default wallpaper.`, "success");
     });
-    dropdown.appendChild(btnSetDefault);
+    dropdown.appendChild(defaultOption);
 
-    cornerActions.appendChild(dropdown);
+    item.addEventListener("click", async () => {
+      if (renamingWallpaperId === wp.id) return;
+      openMenuWallpaperId = null;
+      selectedWallpaperId = wp.id;
+      await saveSettings();
+      renderWallpaperGallery();
+      await redrawPreview();
+    });
 
     item.appendChild(thumb);
     item.appendChild(meta);
-    item.appendChild(cornerActions);
+    item.appendChild(actions);
+    item.appendChild(dropdown);
     wallpaperGallery.appendChild(item);
   }
 }
 
-async function redrawPreview() {
-  if (!viewportImage) return;
-  const all = getAllWallpapers();
-  const activeWp =
-    all.find((w) => w.id === selectedWallpaperId) ||
-    all.find((w) => w.id === defaultWallpaperId) ||
-    BUILTIN_WALLPAPERS[0];
+/**
+ * Restore all wallpapers, names, default selection, and settings to factory defaults (with Undo support).
+ */
+async function restoreAllDefaults() {
+  const prevSnapshot = {
+    wallpapersList: wallpapersList.map((w) => ({ ...w })),
+    selectedWallpaperId,
+    defaultWallpaperId,
+    themeMode,
+    syncMockupTheme,
+    urlValue: urlInput.value,
+    titleValue: titleInput.value,
+  };
 
-  const bgImg = await loadImage(activeWp.src);
-  await renderFramedScreenshotToCanvas({
-    canvas: previewCanvas,
-    viewportImage,
-    backgroundImage: bgImg,
-    url: urlInput.value,
-    title: titleInput.value,
-    marginMode: 'reference',
-    fitReferenceSize: false,
-    viewportCssWidth,
-    mockupTheme: getEffectiveMockupTheme(),
-  });
-  const dimensionsBadge = document.getElementById('dimensionsBadge');
-  if (dimensionsBadge) {
-    dimensionsBadge.textContent = `${previewCanvas.width} × ${previewCanvas.height} px`;
-  }
-}
+  openMenuWallpaperId = null;
+  renamingWallpaperId = null;
+  wallpapersList = cloneBuiltinWallpapers();
+  defaultWallpaperId = "macos-default";
+  selectedWallpaperId = "macos-default";
+  urlInput.value = initialTabUrl;
+  titleInput.value = initialTabTitle;
 
-const debouncedRedrawPreview = debounce(() => {
-  redrawPreview();
-}, 280);
-
-async function init() {
-  const saved = await readStorage([
-    'wallpapersList',
-    'customWallpapers',
-    'defaultWallpaperId',
-    'blobToken',
-    'themeMode',
-    'syncMockupTheme',
-    'extensionLogs',
-  ]);
-
-  if (Array.isArray(saved.wallpapersList) && saved.wallpapersList.length > 0) {
-    wallpapersList = saved.wallpapersList;
-  } else if (Array.isArray(saved.customWallpapers) && saved.customWallpapers.length > 0) {
-    wallpapersList = [...BUILTIN_WALLPAPERS, ...saved.customWallpapers];
-    await writeStorage({ wallpapersList });
-  } else {
-    wallpapersList = [...BUILTIN_WALLPAPERS];
-  }
-
-  if (saved.defaultWallpaperId && wallpapersList.some((w) => w.id === saved.defaultWallpaperId)) {
-    defaultWallpaperId = saved.defaultWallpaperId;
-  } else {
-    defaultWallpaperId = wallpapersList[0].id;
-  }
-  selectedWallpaperId = defaultWallpaperId;
-
-  if (saved.blobToken) {
-    blobTokenInput.value = saved.blobToken;
-  }
-
-  if (Array.isArray(saved.extensionLogs)) {
-    currentLogs = saved.extensionLogs;
-  }
-
-  const initialSyncMockup =
-    typeof saved.syncMockupTheme === 'boolean' ? saved.syncMockupTheme : true;
-  applySyncMockupSwitch(initialSyncMockup);
-  applyTheme(saved.themeMode || 'system');
+  applySyncMockupSwitch(true, false);
+  applyTheme("system", false);
+  await saveSettings();
   renderWallpaperGallery();
-
-  if (typeof chrome !== 'undefined' && chrome.tabs?.query) {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab && tab.url && !tab.url.startsWith('chrome-extension://') && !tab.url.startsWith('file://')) {
-        urlInput.value = tab.url;
-        titleInput.value = tab.title || 'Skriptjobs';
-        viewportCssWidth = tab.width || null;
-        const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
-        viewportImage = await loadImage(dataUrl);
-        await redrawPreview();
-        await replaceOperationLogs(
-          'info',
-          { integration: 'screendump-helper', event: 'capture_visible_tab' },
-          { tabId: tab.id, url: tab.url, dimensions: `${previewCanvas.width}x${previewCanvas.height}` }
-        );
-        return;
-      }
-    } catch (err) {
-      await replaceOperationLogs(
-        'warn',
-        'Failed to capture active tab viewport, using sample viewport fallback',
-        { error: { message: err?.message || String(err) } }
-      );
-    }
-  }
-
-  viewportImage = await loadImage('assets/sample-viewport.png');
   await redrawPreview();
+  await appendLogEvent("settings:restoreDefaults", {
+    restoredWallpapersCount: wallpapersList.length,
+    defaultWallpaperId,
+  });
+
+  setStatus("Restored original defaults.", "success", {
+    undoLabel: "Undo",
+    onUndo: async () => {
+      wallpapersList = prevSnapshot.wallpapersList;
+      selectedWallpaperId = prevSnapshot.selectedWallpaperId;
+      defaultWallpaperId = prevSnapshot.defaultWallpaperId;
+      urlInput.value = prevSnapshot.urlValue;
+      titleInput.value = prevSnapshot.titleValue;
+      applySyncMockupSwitch(prevSnapshot.syncMockupTheme, false);
+      applyTheme(prevSnapshot.themeMode, false);
+      await saveSettings();
+      renderWallpaperGallery();
+      await redrawPreview();
+      setStatus("Reverted to previous settings.", "info");
+    },
+  });
 }
 
-function canvasToBlob(canvas) {
-  return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+btnRestoreWallpapers.addEventListener("click", restoreAllDefaults);
+btnRestoreDefaults.addEventListener("click", restoreAllDefaults);
+
+async function redrawPreview() {
+  if (!rawScreenshotImage) return;
+  const activeWp =
+    wallpapersList.find((w) => w.id === selectedWallpaperId) ||
+    wallpapersList.find((w) => w.id === defaultWallpaperId) ||
+    wallpapersList[0];
+
+  const wallpaperImg = await resolveWallpaperImage(activeWp);
+  const mockupTheme = resolveMockupTheme();
+  const dims = await renderFramedIssueCanvas({
+    canvas: previewCanvas,
+    screenshotImage: rawScreenshotImage,
+    wallpaperImage: wallpaperImg,
+    logoImage: skriptjobsLogoImage,
+    pageUrl: urlInput.value.trim(),
+    pageTitle: titleInput.value.trim(),
+    mockupTheme,
+  });
+  dimensionsBadge.textContent = `${dims.width} × ${dims.height} px`;
 }
 
-// Open full-resolution framed PNG in a new browser tab
-btnOpenFullTab.addEventListener('click', async () => {
-  const blob = await canvasToBlob(previewCanvas);
-  const url = URL.createObjectURL(blob);
-  await replaceOperationLogs(
-    'info',
-    { integration: 'screendump-helper', event: 'open_preview_in_new_tab' },
-    { width: previewCanvas.width, height: previewCanvas.height }
-  );
-  if (typeof chrome !== 'undefined' && chrome.tabs?.create) {
-    await chrome.tabs.create({ url });
-  } else {
-    window.open(url, '_blank');
+function getCanvasBlob(canvas = previewCanvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("Canvas toBlob failed"));
+    }, "image/png");
+  });
+}
+
+function getSlugBaseName() {
+  const slug =
+    (titleInput.value || "issue")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 48) || "screenshot";
+  return `skriptjobs-${slug}`;
+}
+
+/**
+ * Open the full-resolution framed PNG in a new browser tab.
+ */
+async function openFullResolutionInNewTab() {
+  try {
+    await startOperationLog("openFullImageInNewTab", {
+      url: urlInput.value.trim(),
+      title: titleInput.value.trim(),
+      wallpaperId: selectedWallpaperId,
+    });
+    const blob = await getCanvasBlob();
+    const blobUrl = URL.createObjectURL(blob);
+    if (typeof chrome !== "undefined" && chrome.tabs && chrome.tabs.create) {
+      await chrome.tabs.create({ url: blobUrl });
+    } else {
+      window.open(blobUrl, "_blank", "noopener");
+    }
+    await finishOperationLog("success", { dimensions: dimensionsBadge.textContent });
+  } catch (err) {
+    await finishOperationLog("error", { message: err.message });
+    setStatus(`Could not open preview tab: ${err.message}`, "error");
   }
-});
+}
 
-btnUploadWallpapers.addEventListener('click', () => {
+btnOpenFullTab.addEventListener("click", openFullResolutionInNewTab);
+btnOpenFullTabOps.addEventListener("click", openFullResolutionInNewTab);
+
+/**
+ * Capture the active browser tab (or load sample screen in standalone preview mode)
+ */
+async function captureActiveTab() {
+  await startOperationLog("captureActiveTab", {});
+  if (typeof chrome !== "undefined" && chrome.tabs && chrome.tabs.query) {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab) {
+      if (tab.url && !tab.url.startsWith("chrome://")) {
+        initialTabUrl = tab.url;
+        urlInput.value = tab.url;
+      }
+      if (tab.title) {
+        initialTabTitle = tab.title;
+        titleInput.value = tab.title;
+      }
+      await appendLogEvent("activeTab:detected", { url: urlInput.value, title: titleInput.value });
+    }
+    const dataUrl = await chrome.tabs.captureVisibleTab(null, { format: "png" });
+    rawScreenshotImage = await loadImage(dataUrl);
+    await finishOperationLog("success", {
+      width: rawScreenshotImage.naturalWidth,
+      height: rawScreenshotImage.naturalHeight,
+    });
+    return;
+  }
+
+  // Fallback for standalone preview/testing outside chrome.tabs context
+  const params = new URLSearchParams(window.location.search);
+  const sampleSrc = params.get("sample") || "assets/sample-screen.png";
+  rawScreenshotImage = await loadImage(sampleSrc);
+  await finishOperationLog("success", { sampleSrc });
+}
+
+// Multi-wallpaper file upload
+btnUploadWallpapers.addEventListener("click", () => {
   multiWallpaperInput.click();
 });
 
-multiWallpaperInput.addEventListener('change', async (e) => {
+multiWallpaperInput.addEventListener("change", async (e) => {
   const files = Array.from(e.target.files || []);
   if (!files.length) return;
 
-  await replaceOperationLogs(
-    'info',
-    { integration: 'screendump-helper', event: 'upload_wallpapers_start' },
-    { count: files.length }
-  );
-
+  await startOperationLog("uploadWallpapers", { count: files.length });
+  const newlyAddedIds = [];
   for (const file of files) {
-    const dataUrl = await new Promise((resolve, reject) => {
+    const dataUrl = await new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-    const cleanName = file.name.replace(/\.[^.]+$/, '');
+    const cleanName = file.name.replace(/\.[a-z0-9]+$/i, "").slice(0, 28) || "Custom Wallpaper";
     const id = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     wallpapersList.push({
       id,
       name: cleanName,
+      type: "image",
       src: dataUrl,
       builtin: false,
     });
-    selectedWallpaperId = id;
+    newlyAddedIds.push(id);
   }
 
-  await writeStorage({ wallpapersList });
-  renderWallpaperGallery();
-  await redrawPreview();
-  setStatus(`Uploaded ${files.length} custom wallpaper(s).`, 'success');
-  await appendOperationLog(
-    'info',
-    { integration: 'screendump-helper', event: 'upload_wallpapers_success' },
-    { count: files.length, selectedWallpaperId }
-  );
-  multiWallpaperInput.value = '';
+  if (newlyAddedIds.length > 0) {
+    selectedWallpaperId = newlyAddedIds[newlyAddedIds.length - 1];
+    await saveSettings();
+    renderWallpaperGallery();
+    await redrawPreview();
+    await finishOperationLog("success", { addedIds: newlyAddedIds });
+    setStatus(
+      newlyAddedIds.length === 1
+        ? "Added 1 wallpaper to your gallery."
+        : `Added ${newlyAddedIds.length} wallpapers to your gallery.`,
+      "success"
+    );
+  }
+  multiWallpaperInput.value = "";
 });
 
-// Debounced Output fields to prevent flashing mockup preview
-urlInput.addEventListener('input', debouncedRedrawPreview);
-titleInput.addEventListener('input', debouncedRedrawPreview);
+// Debounced live re-render when Override Mockup URL or Override Tab Title changes
+const debouncedRedrawPreview = debounce(() => {
+  redrawPreview();
+}, 280);
 
-blobTokenInput.addEventListener('change', async () => {
-  await writeStorage({ blobToken: blobTokenInput.value.trim() });
-  await replaceOperationLogs(
-    'info',
-    { integration: 'screendump-helper', event: 'blob_token_updated' },
-    { configured: Boolean(blobTokenInput.value.trim()) }
-  );
-});
+urlInput.addEventListener("input", debouncedRedrawPreview);
+titleInput.addEventListener("input", debouncedRedrawPreview);
+blobTokenInput.addEventListener("change", () => saveSettings());
 
-btnCopyClipboard.addEventListener('click', async () => {
-  await replaceOperationLogs(
-    'info',
-    { integration: 'screendump-helper', event: 'copy_clipboard_start' },
-    { width: previewCanvas.width, height: previewCanvas.height }
-  );
+// Copy framed PNG to clipboard
+btnCopyClipboard.addEventListener("click", async () => {
   try {
-    const blob = await canvasToBlob(previewCanvas);
-    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-    setStatus(`Copied framed PNG (${previewCanvas.width}×${previewCanvas.height}) to clipboard!`, 'success');
-    await appendOperationLog(
-      'info',
-      { integration: 'screendump-helper', event: 'copy_clipboard_success' },
-      { width: previewCanvas.width, height: previewCanvas.height }
-    );
+    setStatus("Copying framed PNG to clipboard...", "info");
+    await startOperationLog("copyPngToClipboard", {
+      url: urlInput.value.trim(),
+      title: titleInput.value.trim(),
+      wallpaperId: selectedWallpaperId,
+      mockupTheme: resolveMockupTheme(),
+    });
+    const blob = await getCanvasBlob();
+    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    await finishOperationLog("success", { sizeBytes: blob.size });
+    setStatus("Copied framed PNG to clipboard!", "success");
   } catch (err) {
-    setStatus(`Clipboard error: ${err.message}`, 'error');
-    await appendOperationLog(
-      'error',
-      'Failed to copy framed PNG to clipboard',
-      { error: { message: err?.message || String(err) } }
-    );
+    await finishOperationLog("error", { message: err.message });
+    setStatus(`Clipboard error: ${err.message}`, "error");
   }
 });
 
-btnDownloadPng.addEventListener('click', async () => {
-  const slug =
-    (titleInput.value || 'screendump')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '') || 'screendump';
-  const filename = `${slug}-framed.png`;
-
-  await replaceOperationLogs(
-    'info',
-    { integration: 'screendump-helper', event: 'download_png' },
-    { filename, width: previewCanvas.width, height: previewCanvas.height }
-  );
-
-  const blob = await canvasToBlob(previewCanvas);
+// Download single PNG
+btnDownloadPng.addEventListener("click", async () => {
+  await startOperationLog("downloadPng", {
+    url: urlInput.value.trim(),
+    title: titleInput.value.trim(),
+    wallpaperId: selectedWallpaperId,
+    mockupTheme: resolveMockupTheme(),
+  });
+  const blob = await getCanvasBlob();
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
+  const filename = `${getSlugBaseName()}-framed.png`;
   a.href = url;
   a.download = filename;
   a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-  setStatus(`Downloaded ${filename}`, 'success');
+  URL.revokeObjectURL(url);
+  await finishOperationLog("success", { filename, sizeBytes: blob.size });
+  setStatus(`Downloaded ${filename}`, "success");
 });
 
-btnUploadBlob.addEventListener('click', async () => {
-  await replaceOperationLogs(
-    'info',
-    { integration: 'screendump-helper', event: 'vercel_blob_upload_start' },
-    { width: previewCanvas.width, height: previewCanvas.height }
-  );
+// Download Light & Dark ZIP for Nuxt UI <UColorModeImage />
+btnDownloadThemeZip.addEventListener("click", async () => {
   try {
-    const token = blobTokenInput.value.trim();
-    if (!token) {
-      setStatus('Enter your BLOB_READ_WRITE_TOKEN in Settings first.', 'error');
-      await appendOperationLog(
-        'error',
-        'Missing BLOB_READ_WRITE_TOKEN when attempting Vercel Blob upload',
-        { error: { code: 'MISSING_BLOB_TOKEN' } }
-      );
-      setActiveAccordionItem('settings', false);
-      return;
-    }
-    await writeStorage({ blobToken: token });
-    setStatus('Uploading framed PNG to Vercel Blob...', 'info');
-
-    const pngBlob = await canvasToBlob(previewCanvas);
-    const slug =
-      (titleInput.value || 'screendump')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '') || 'screendump';
-    const pathname = `screendumps/${new Date().toISOString().slice(0, 10)}/${slug}-${Date.now()}.png`;
-
-    const res = await fetch(`https://blob.vercel-storage.com/${pathname}`, {
-      method: 'PUT',
-      headers: {
-        authorization: `Bearer ${token}`,
-        'x-api-version': '7',
-        'x-content-type': 'image/png',
-      },
-      body: pngBlob,
+    setStatus("Rendering Light & Dark mockups for ZIP...", "info");
+    const baseName = getSlugBaseName();
+    await startOperationLog("downloadLightDarkZip", {
+      baseName,
+      url: urlInput.value.trim(),
+      title: titleInput.value.trim(),
+      wallpaperId: selectedWallpaperId,
     });
 
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Vercel Blob HTTP ${res.status}: ${errText}`);
+    const activeWp =
+      wallpapersList.find((w) => w.id === selectedWallpaperId) ||
+      wallpapersList.find((w) => w.id === defaultWallpaperId) ||
+      wallpapersList[0];
+    const wallpaperImg = await resolveWallpaperImage(activeWp);
+
+    const offscreenLight = document.createElement("canvas");
+    await renderFramedIssueCanvas({
+      canvas: offscreenLight,
+      screenshotImage: rawScreenshotImage,
+      wallpaperImage: wallpaperImg,
+      logoImage: skriptjobsLogoImage,
+      pageUrl: urlInput.value.trim(),
+      pageTitle: titleInput.value.trim(),
+      mockupTheme: "light",
+    });
+    const lightBlob = await getCanvasBlob(offscreenLight);
+    const lightBytes = new Uint8Array(await lightBlob.arrayBuffer());
+
+    const offscreenDark = document.createElement("canvas");
+    await renderFramedIssueCanvas({
+      canvas: offscreenDark,
+      screenshotImage: rawScreenshotImage,
+      wallpaperImage: wallpaperImg,
+      logoImage: skriptjobsLogoImage,
+      pageUrl: urlInput.value.trim(),
+      pageTitle: titleInput.value.trim(),
+      mockupTheme: "dark",
+    });
+    const darkBlob = await getCanvasBlob(offscreenDark);
+    const darkBytes = new Uint8Array(await darkBlob.arrayBuffer());
+
+    const lightFilename = `${baseName}-light.png`;
+    const darkFilename = `${baseName}-dark.png`;
+    const zipFilename = `${baseName}-light-dark.zip`;
+
+    const zipBlob = createZipBlob([
+      { name: lightFilename, data: lightBytes },
+      { name: darkFilename, data: darkBytes },
+    ]);
+
+    const zipUrl = URL.createObjectURL(zipBlob);
+    const a = document.createElement("a");
+    a.href = zipUrl;
+    a.download = zipFilename;
+    a.click();
+    URL.revokeObjectURL(zipUrl);
+
+    await finishOperationLog("success", {
+      zipFilename,
+      files: [lightFilename, darkFilename],
+      sizeBytes: zipBlob.size,
+    });
+    setStatus(`Downloaded ${zipFilename} (${lightFilename} & ${darkFilename})`, "success");
+  } catch (err) {
+    await finishOperationLog("error", { message: err.message });
+    setStatus(`ZIP export failed: ${err.message}`, "error");
+  }
+});
+
+// Upload to Vercel Blob & copy GitHub Issue Markdown
+btnUploadBlob.addEventListener("click", async () => {
+  try {
+    await saveSettings();
+    const token = blobTokenInput.value.trim();
+    if (!token) {
+      setOpenAccordion("settings");
+      setStatus("Enter your Vercel Blob token in Settings first.", "error");
+      return;
     }
 
-    const data = await res.json();
-    const md = `![${titleInput.value || 'Screenshot'}](${data.url})`;
-    await navigator.clipboard.writeText(md);
-    setStatus(`Copied Markdown: ${md}`, 'success');
-    await appendOperationLog(
-      'info',
-      { integration: 'screendump-helper', event: 'vercel_blob_upload_success' },
-      { url: data.url, pathname, markdownCopied: true }
-    );
+    setStatus("Uploading framed PNG to Vercel Blob...", "info");
+    await startOperationLog("uploadVercelBlob", {
+      url: urlInput.value.trim(),
+      title: titleInput.value.trim(),
+      wallpaperId: selectedWallpaperId,
+      mockupTheme: resolveMockupTheme(),
+    });
+    const blob = await getCanvasBlob();
+    const slug =
+      (titleInput.value || "issue")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 48) || "screenshot";
+    const pathname = `issues/${Date.now()}-${slug}.png`;
+
+    const response = await fetch(`https://blob.vercel-storage.com/${pathname}`, {
+      method: "PUT",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "x-api-version": "7",
+        "x-content-type": "image/png",
+      },
+      body: blob,
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errText}`);
+    }
+
+    const result = await response.json();
+    const markdown = `![${titleInput.value || "Screenshot"}](${result.url})`;
+    await navigator.clipboard.writeText(markdown);
+    await finishOperationLog("success", { blobUrl: result.url, markdown });
+    setStatus(`Uploaded & copied Markdown: ${result.url}`, "success");
   } catch (err) {
-    setStatus(`Upload failed: ${err.message}`, 'error');
-    await appendOperationLog(
-      'error',
-      'Failed to upload framed screenshot to Vercel Blob',
-      { error: { message: err?.message || String(err) } }
-    );
+    await finishOperationLog("error", { message: err.message });
+    setStatus(`Upload failed: ${err.message}`, "error");
   }
 });
 
-init().then(() => {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('section')) {
-    setActiveAccordionItem(params.get('section'), false);
-  }
-  if (params.get('theme')) {
-    applyTheme(params.get('theme'));
-    redrawPreview();
-  }
-  if (params.get('tooltip')) {
-    document.getElementById(params.get('tooltip'))?.classList.add('force-tooltip');
-  }
-  if (params.get('hoverWp')) {
-    const wpEl = document.querySelector(`[data-wp-id="${params.get('hoverWp')}"]`);
-    wpEl?.classList.add('force-hover');
-  }
-  if (params.get('openMenuWp')) {
-    openDropdownWpId = params.get('openMenuWp');
+// Initialize extension popup
+(async () => {
+  try {
+    const saved = await loadSettings();
+    if (saved.blobReadWriteToken) {
+      blobTokenInput.value = saved.blobReadWriteToken;
+    }
+
+    // Load saved wallpaper list or fall back to built-ins + customWallpapers
+    if (Array.isArray(saved.wallpapersState) && saved.wallpapersState.length > 0) {
+      wallpapersList = saved.wallpapersState;
+    } else {
+      const custom = Array.isArray(saved.customWallpapers) ? saved.customWallpapers : [];
+      wallpapersList = [...cloneBuiltinWallpapers(), ...custom];
+    }
+
+    if (saved.defaultWallpaperId && wallpapersList.some((w) => w.id === saved.defaultWallpaperId)) {
+      defaultWallpaperId = saved.defaultWallpaperId;
+    }
+    selectedWallpaperId = defaultWallpaperId;
+
+    // Apply saved Sync Browser Mockup Theme preference (defaults to true)
+    const initialSyncMockup = typeof saved.syncMockupTheme === "boolean" ? saved.syncMockupTheme : true;
+    applySyncMockupSwitch(initialSyncMockup, false);
+
+    // Apply saved theme (System by default) before first render
+    const initialThemeMode = ["system", "dark", "light"].includes(saved.themeMode) ? saved.themeMode : "system";
+    applyTheme(initialThemeMode, false);
+
     renderWallpaperGallery();
+    skriptjobsLogoImage = await loadImage(SKRIPTJOBS_LOGO_URL);
+    await captureActiveTab();
+    await redrawPreview();
+  } catch (err) {
+    setStatus(`Init error: ${err.message}`, "error");
   }
-  if (params.get('hoverPreview')) {
-    document.querySelector('.mockup-preview-wrap')?.classList.add('force-hover');
-  }
-});
+})();

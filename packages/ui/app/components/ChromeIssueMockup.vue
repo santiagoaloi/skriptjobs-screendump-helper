@@ -1,36 +1,26 @@
 <script setup lang="ts">
-/**
- * Reusable macOS Chrome issue screenshot mockup component for @skriptjobs/ui.
- * Supports both dark and light Chrome themes synced to the active theme.
- */
-import { ref, watch, onMounted } from 'vue'
-import {
-  CHROME_MOCKUP_THEME,
-  renderFramedScreenshotToCanvas,
-} from '../../../../shared/frame-renderer.js'
+import { ref, onMounted, watch } from 'vue'
+import { renderFramedIssueCanvas } from '../../../../shared/frame-renderer.js'
 
-const props = withDefaults(
-  defineProps<{
-    viewportSrc: string
-    wallpaperSrc?: string
-    url?: string
-    title?: string
-    marginMode?: 'reference' | 'symmetric'
-    fitReferenceSize?: boolean
-    mockupTheme?: 'dark' | 'light'
-  }>(),
-  {
-    wallpaperSrc: '/assets/backgrounds/macos-default.png',
-    url: 'https://docs.skriptjobs.localhost:3050/getting-started/installation',
-    title: 'Installation - Skriptjobs',
-    marginMode: 'reference',
-    fitReferenceSize: false,
-    mockupTheme: 'dark',
-  }
-)
+const props = withDefaults(defineProps<{
+  screenshotSrc: string
+  wallpaperSrc?: string
+  logoSrc?: string
+  pageUrl?: string
+  pageTitle?: string
+  mockupTheme?: 'dark' | 'light'
+  margin?: number
+}>(), {
+  wallpaperSrc: '/assets/default-wallpaper.jpg',
+  logoSrc: '/assets/brand/logo-color.svg',
+  pageUrl: 'https://docs.skriptjobs.localhost:3050/getting-started/installation',
+  pageTitle: 'Installation - Skriptjobs',
+  mockupTheme: 'dark',
+  margin: 56
+})
 
 const emit = defineEmits<{
-  (e: 'rendered', canvas: HTMLCanvasElement): void
+  (e: 'rendered', dimensions: { width: number; height: number }): void
 }>()
 
 const canvasRef = ref<HTMLCanvasElement | null>(null)
@@ -46,51 +36,64 @@ function loadImg(src: string): Promise<HTMLImageElement> {
 }
 
 async function draw() {
-  if (!canvasRef.value || !props.viewportSrc) return
-  const [vpImg, bgImg] = await Promise.all([
-    loadImg(props.viewportSrc),
-    loadImg(props.wallpaperSrc),
+  if (!canvasRef.value || !props.screenshotSrc) return
+  const [shot, wp, logo] = await Promise.all([
+    loadImg(props.screenshotSrc),
+    props.wallpaperSrc ? loadImg(props.wallpaperSrc) : Promise.resolve(null),
+    props.logoSrc ? loadImg(props.logoSrc) : Promise.resolve(null)
   ])
-  await renderFramedScreenshotToCanvas({
+  const dims = await renderFramedIssueCanvas({
     canvas: canvasRef.value,
-    viewportImage: vpImg,
-    backgroundImage: bgImg,
-    url: props.url,
-    title: props.title,
-    marginMode: props.marginMode,
-    fitReferenceSize: props.fitReferenceSize,
+    screenshotImage: shot,
+    wallpaperImage: wp,
+    logoImage: logo,
+    pageUrl: props.pageUrl,
+    pageTitle: props.pageTitle,
     mockupTheme: props.mockupTheme,
+    margin: props.margin
   })
-  emit('rendered', canvasRef.value)
+  emit('rendered', dims)
 }
 
+async function openFullResolutionInNewTab() {
+  if (!canvasRef.value) return
+  canvasRef.value.toBlob((blob) => {
+    if (!blob) return
+    const blobUrl = URL.createObjectURL(blob)
+    window.open(blobUrl, '_blank', 'noopener')
+  }, 'image/png')
+}
+
+onMounted(draw)
 watch(
-  () => [
-    props.viewportSrc,
-    props.wallpaperSrc,
-    props.url,
-    props.title,
-    props.marginMode,
-    props.mockupTheme,
-  ],
+  () => [props.screenshotSrc, props.wallpaperSrc, props.logoSrc, props.pageUrl, props.pageTitle, props.mockupTheme],
   draw
 )
-onMounted(draw)
 
 defineExpose({
   canvasRef,
   redraw: draw,
-  theme: CHROME_MOCKUP_THEME,
+  openFullResolutionInNewTab
 })
 </script>
 
 <template>
-  <div class="relative overflow-hidden rounded-lg border border-default bg-bg2 p-1.5">
+  <div class="group relative flex items-center justify-center rounded-b-[calc(var(--ui-radius)-1px)] bg-neutral-100 dark:bg-[#080808] p-1.5">
     <canvas
       ref="canvasRef"
-      width="1711"
-      height="1076"
-      class="block h-auto w-full rounded-md select-none"
+      class="block max-h-[168px] max-w-full rounded-md"
     />
+    <UTooltip text="Open full image in new tab">
+      <UButton
+        color="neutral"
+        variant="outline"
+        size="xs"
+        square
+        icon="i-ph-arrow-square-out-bold"
+        aria-label="Open full image in new tab"
+        class="absolute top-3 right-3 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-visible:opacity-100 focus-visible:pointer-events-auto shadow-none transition-none"
+        @click="openFullResolutionInNewTab"
+      />
+    </UTooltip>
   </div>
 </template>

@@ -9,6 +9,7 @@
   <style>
     /* ==========================================================================
        @skriptjobs/ui + @nuxt/ui v4 Design System Tokens (Neutral Light & Dark)
+       Zero transitions on theme changes or accordion chevrons.
        ========================================================================== */
     :root, html.light {
       color-scheme: light;
@@ -113,7 +114,7 @@
       gap: 8px;
     }
 
-    /* Header (Skriptjobs wordmark + Harmonic Plain Text Title) */
+    /* Header (Skriptjobs wordmark + Baseline-Aligned Plain Text Title) */
     .u-header {
       display: flex;
       align-items: center;
@@ -124,7 +125,7 @@
     .u-brand {
       display: flex;
       align-items: center;
-      gap: 11px;
+      gap: 10px;
     }
     .u-brand-logo {
       height: 28px;
@@ -135,16 +136,16 @@
     }
     .u-divider-v {
       width: 1px;
-      height: 15px;
+      height: 14px;
       background: var(--ui-border-muted);
     }
     .u-brand-subtitle {
-      font-size: 15px;
+      font-size: 14.5px;
       font-weight: 500;
       letter-spacing: -0.015em;
       color: var(--ui-text-muted);
       line-height: 1;
-      transform: translateY(0.5px);
+      transform: translateY(-0.5px);
     }
 
     /* Nuxt UI UCard */
@@ -173,7 +174,7 @@
       gap: 7px;
     }
 
-    /* Live Mockup Preview Container (<ChromeIssueMockup />) with theme-aware top-right Open in Tab button */
+    /* Live Mockup Preview Container (<ChromeIssueMockup />) with top-right Open in Tab button (no shadow, no animation) */
     .mockup-preview-wrap {
       position: relative;
       background: var(--ui-preview-stage);
@@ -191,7 +192,6 @@
       height: auto;
       border-radius: 6px;
       display: block;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     }
     .preview-open-tab-btn {
       position: absolute;
@@ -207,10 +207,10 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+      box-shadow: none;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.15s ease, transform 0.14s ease, background 0.14s ease, border-color 0.14s ease;
+      transition: none;
       z-index: 10;
     }
     .mockup-preview-wrap:hover .preview-open-tab-btn,
@@ -223,7 +223,6 @@
       background: var(--ui-bg-accented);
       border-color: var(--ui-border-accented);
       color: var(--ui-text-highlighted);
-      transform: scale(1.04);
     }
 
     /* ==========================================================================
@@ -236,6 +235,12 @@
       overflow: visible;
       display: flex;
       flex-direction: column;
+    }
+    .u-accordion-item {
+      position: relative;
+    }
+    .u-accordion-item.open {
+      z-index: 20;
     }
     .u-accordion-item + .u-accordion-item {
       border-top: 1px solid var(--ui-border);
@@ -254,7 +259,6 @@
       align-items: center;
       justify-content: space-between;
       cursor: pointer;
-      transition: background 0.14s ease, color 0.14s ease;
       text-align: left;
     }
     .u-accordion-trigger:hover {
@@ -270,7 +274,6 @@
       height: 14px;
       color: var(--ui-text-muted);
       flex-shrink: 0;
-      transition: color 0.14s ease;
     }
     .u-accordion-item.open .u-accordion-icon {
       color: var(--ui-text-highlighted);
@@ -279,7 +282,6 @@
       width: 14px;
       height: 14px;
       color: var(--ui-text-muted);
-      transition: transform 0.18s ease, color 0.18s ease;
       flex-shrink: 0;
     }
     .u-accordion-item.open .u-accordion-chevron {
@@ -306,6 +308,11 @@
       font-size: 11px;
       color: var(--ui-text-muted);
     }
+    .wp-toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
 
     /* Multi-Wallpaper Gallery Grid (no hardcoded height or scrollbar) */
     .wallpaper-grid {
@@ -323,9 +330,12 @@
       border: 1px solid var(--ui-border);
       background: var(--ui-bg);
       cursor: pointer;
-      transition: all 0.14s ease;
       position: relative;
       overflow: visible;
+      z-index: 1;
+    }
+    .wp-item.menu-open {
+      z-index: 100;
     }
     .wp-item:hover,
     .wp-item.force-hover {
@@ -402,7 +412,6 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
     }
     .wp-menu-btn:hover,
     .wp-menu-btn.active {
@@ -411,18 +420,19 @@
       color: var(--ui-text-highlighted);
     }
 
-    /* 3-Dots Dropdown Menu on Wallpaper Card */
+    /* 3-Dots Dropdown Menu on Wallpaper Card — exact width of image card, high z-index */
     .wp-dropdown {
       position: absolute;
       top: calc(100% + 4px);
-      right: 0;
-      min-width: 152px;
+      left: -1px;
+      right: -1px;
+      width: calc(100% + 2px);
       background: var(--ui-bg-elevated);
       border: 1px solid var(--ui-border-muted);
       border-radius: 7px;
       padding: 4px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24);
-      z-index: 60;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+      z-index: 120;
       display: none;
       flex-direction: column;
       gap: 1px;
@@ -446,7 +456,7 @@
       align-items: center;
       gap: 7px;
       text-align: left;
-      transition: background 0.12s ease, color 0.12s ease;
+      white-space: nowrap;
     }
     .wp-dropdown-item:hover {
       background: var(--ui-bg-muted);
@@ -475,7 +485,6 @@
       align-items: center;
       justify-content: center;
       gap: 7px;
-      transition: all 0.14s ease;
       line-height: 1.2;
       position: relative;
     }
@@ -514,7 +523,7 @@
       position: absolute;
       top: calc(100% + 6px);
       left: 50%;
-      transform: translateX(-50%) translateY(-2px);
+      transform: translateX(-50%);
       background: var(--ui-bg-elevated);
       color: var(--ui-text-highlighted);
       border: 1px solid var(--ui-border-muted);
@@ -524,48 +533,32 @@
       padding: 4px 8px;
       border-radius: 5px;
       white-space: nowrap;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.14s ease, transform 0.14s ease;
-      z-index: 50;
+      z-index: 150;
     }
     [data-tooltip].tooltip-right::after {
       left: auto;
       right: 0;
-      transform: translateY(-2px);
+      transform: none;
     }
     [data-tooltip].tooltip-left::after {
       left: 0;
-      transform: translateY(-2px);
+      transform: none;
     }
     [data-tooltip]:hover::after,
     [data-tooltip]:focus-visible::after,
     [data-tooltip].force-tooltip::after {
       opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-    [data-tooltip].tooltip-right:hover::after,
-    [data-tooltip].tooltip-right.force-tooltip::after {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    [data-tooltip].tooltip-left:hover::after,
-    [data-tooltip].tooltip-left.force-tooltip::after {
-      opacity: 1;
-      transform: translateY(0);
     }
 
-    /* Image Operations Row inside Accordion */
+    /* Image Operations Row inside Accordion (All Square Icon Buttons) */
     .u-ops-row {
       display: flex;
       align-items: center;
       gap: 8px;
       padding-top: 2px;
-    }
-    .u-ops-flex {
-      flex: 1;
-      font-weight: 600;
     }
 
     /* Output & Settings Form Stacks */
@@ -608,7 +601,7 @@
       color: var(--ui-text-dimmed);
       pointer-events: none;
     }
-    /* Neutral border input fields (no primary blue border) */
+    /* Neutral border input fields (no primary border, no transitions) */
     .u-input {
       width: 100%;
       background: var(--ui-bg);
@@ -619,7 +612,6 @@
       font-family: var(--font-sans);
       font-size: 11.5px;
       outline: none;
-      transition: border-color 0.14s ease, box-shadow 0.14s ease;
     }
     .u-input.mono {
       font-family: var(--font-mono);
@@ -658,7 +650,6 @@
       align-items: center;
       justify-content: center;
       gap: 5px;
-      transition: all 0.14s ease;
     }
     .u-theme-option:hover {
       color: var(--ui-text-highlighted);
@@ -668,7 +659,6 @@
       background: var(--ui-bg-muted);
       border-color: var(--ui-border-muted);
       color: var(--ui-text-highlighted);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
       font-weight: 600;
     }
     .u-theme-option svg {
@@ -711,7 +701,6 @@
       border: 1px solid var(--ui-border-muted);
       position: relative;
       cursor: pointer;
-      transition: background 0.16s ease, border-color 0.16s ease;
       flex-shrink: 0;
     }
     .u-switch::after {
@@ -723,7 +712,6 @@
       height: 13px;
       border-radius: 9999px;
       background: var(--ui-text-muted);
-      transition: transform 0.16s ease, background 0.16s ease;
     }
     .u-switch[aria-checked="true"] {
       background: var(--ui-text-highlighted);
@@ -734,7 +722,21 @@
       background: var(--ui-bg-elevated);
     }
 
-    /* Status Toast Bar with Close Icon */
+    /* Settings Footer Row (Restore to Defaults) */
+    .u-settings-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-top: 2px;
+    }
+    .u-btn-xs {
+      padding: 4.5px 9px;
+      font-size: 11px;
+      border-radius: 5px;
+      gap: 5px;
+    }
+
+    /* Status Toast Bar with Undo Button + Close Icon */
     .u-status {
       font-size: 11px;
       padding: 6px 8px 6px 10px;
@@ -767,6 +769,32 @@
     html.dark .u-status.error {
       color: #fca5a5;
     }
+    .u-status-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .u-status-undo {
+      appearance: none;
+      border: 1px solid var(--ui-border-accented);
+      background: var(--ui-bg-elevated);
+      color: var(--ui-text-highlighted);
+      font-family: var(--font-sans);
+      font-size: 10.5px;
+      font-weight: 500;
+      padding: 2px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: none;
+    }
+    .u-status-undo.visible {
+      display: inline-flex;
+      align-items: center;
+    }
+    .u-status-undo:hover {
+      background: var(--ui-bg-accented);
+    }
     .u-status-close {
       appearance: none;
       width: 20px;
@@ -781,7 +809,6 @@
       justify-content: center;
       cursor: pointer;
       flex-shrink: 0;
-      transition: opacity 0.12s ease, background 0.12s ease;
     }
     .u-status-close:hover {
       opacity: 1;
@@ -790,7 +817,7 @@
   </style>
 </head>
 <body>
-  <!-- Header: Official Skriptjobs Brand Logo + Harmonic Plain Text Title -->
+  <!-- Header: Official Skriptjobs Brand Logo + Baseline-Aligned Plain Text Title -->
   <header class="u-header">
     <div class="u-brand">
       <img id="brandWordmark" src="assets/brand/wordmark-dark.svg" alt="Skriptjobs" class="u-brand-logo" />
@@ -844,8 +871,19 @@
       <div class="u-accordion-body">
         <div class="wp-toolbar">
           <span class="wp-toolbar-label">Select background or open menu</span>
-          <div>
+          <div class="wp-toolbar-actions">
             <input id="multiWallpaperInput" type="file" multiple accept="image/*" style="display:none" />
+            <button
+              id="btnRestoreWallpapers"
+              type="button"
+              class="u-btn u-btn-icon-sm u-btn-soft tooltip-right"
+              data-tooltip="Restore to defaults"
+              aria-label="Restore to defaults"
+            >
+              <svg width="13" height="13" viewBox="0 0 256 256" fill="currentColor">
+                <path d="M224,128a96,96,0,0,1-94.71,96H128A95.38,95.38,0,0,1,62.1,197.8a8,8,0,0,1,11-11.63A80,80,0,1,0,71.43,71.39a3.07,3.07,0,0,1-.26.25L44.59,96H72a8,8,0,0,1,0,16H24a8,8,0,0,1-8-8V56a8,8,0,0,1,16,0V85.8L59.84,60A96,96,0,0,1,224,128Z"/>
+              </svg>
+            </button>
             <button
               id="btnUploadWallpapers"
               type="button"
@@ -863,7 +901,7 @@
       </div>
     </section>
 
-    <!-- Accordion Item 2: Image Operations (Copy, Download, Upload to Vercel Blob) -->
+    <!-- Accordion Item 2: Image Operations (All Matching Square Icon Buttons) -->
     <section class="u-accordion-item" data-accordion-item="operations">
       <button type="button" class="u-accordion-trigger" data-accordion-trigger="operations">
         <span class="u-accordion-trigger-left">
@@ -889,6 +927,7 @@
               <path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/>
             </svg>
           </button>
+
           <button
             id="btnDownloadPng"
             type="button"
@@ -900,22 +939,47 @@
               <path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V32a8,8,0,0,0-16,0v92.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z"/>
             </svg>
           </button>
+
+          <button
+            id="btnDownloadThemeZip"
+            type="button"
+            class="u-btn u-btn-icon u-btn-soft"
+            data-tooltip="Download Light &amp; Dark ZIP"
+            aria-label="Download Light &amp; Dark ZIP"
+          >
+            <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor">
+              <path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192V40a88,88,0,0,1,0,176Z"/>
+            </svg>
+          </button>
+
+          <button
+            id="btnOpenFullTabOps"
+            type="button"
+            class="u-btn u-btn-icon u-btn-soft"
+            data-tooltip="Open full image in new tab"
+            aria-label="Open full image in new tab"
+          >
+            <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor">
+              <path d="M224,104a8,8,0,0,1-16,0V59.32l-66.33,66.34a8,8,0,0,1-11.32-11.32L196.68,48H152a8,8,0,0,1,0-16h64a8,8,0,0,1,8,8Zm-40,24a8,8,0,0,0-8,8v72H48V80h72a8,8,0,0,0,0-16H48A16,16,0,0,0,32,80V208a16,16,0,0,0,16,16H176a16,16,0,0,0,16-16V136A8,8,0,0,0,184,128Z"/>
+            </svg>
+          </button>
+
           <button
             id="btnUploadBlob"
             type="button"
-            class="u-btn u-btn-neutral u-ops-flex tooltip-right"
+            class="u-btn u-btn-icon u-btn-soft"
             data-tooltip="Upload to Vercel Blob &amp; copy Markdown"
+            aria-label="Upload to Vercel Blob &amp; copy Markdown"
           >
             <svg width="15" height="15" viewBox="0 0 256 256" fill="currentColor">
               <path d="M178.34,165.66,160,147.31V208a8,8,0,0,1-16,0V147.31l-18.34,18.35a8,8,0,0,1-11.32-11.32l32-32a8,8,0,0,1,11.32,0l32,32a8,8,0,0,1-11.32,11.32ZM160,40A88.08,88.08,0,0,0,81.29,88.68,64,64,0,1,0,72,216h40a8,8,0,0,0,0-16H72a48,48,0,0,1,0-96c1.1,0,2.2,0,3.29.12A88,88,0,0,0,72,128a8,8,0,0,0,16,0,72,72,0,1,1,104,64.6V208a8,8,0,0,0,16,0v-4.53A88,88,0,0,0,160,40Z"/>
             </svg>
-            Upload to Vercel Blob
           </button>
         </div>
       </div>
     </section>
 
-    <!-- Accordion Item 3: Output (Debounced Override Mockup URL & Override Tab Title) -->
+    <!-- Accordion Item 3: Output (Override Mockup URL & Override Tab Title) -->
     <section class="u-accordion-item" data-accordion-item="output">
       <button type="button" class="u-accordion-trigger" data-accordion-trigger="output">
         <span class="u-accordion-trigger-left">
@@ -933,7 +997,6 @@
           <div class="u-form-field">
             <div class="u-label-row">
               <label class="u-label" for="urlInput">Override Mockup URL</label>
-              <span class="u-hint">debounced</span>
             </div>
             <div class="u-input-wrap">
               <svg class="u-input-icon" viewBox="0 0 256 256" fill="currentColor">
@@ -946,7 +1009,6 @@
           <div class="u-form-field">
             <div class="u-label-row">
               <label class="u-label" for="titleInput">Override Tab Title</label>
-              <span class="u-hint">debounced</span>
             </div>
             <div class="u-input-wrap">
               <svg class="u-input-icon" viewBox="0 0 256 256" fill="currentColor">
@@ -959,7 +1021,7 @@
       </div>
     </section>
 
-    <!-- Accordion Item 4: Settings (Theme, Sync Browser Mockup Theme, Vercel Blob Token) -->
+    <!-- Accordion Item 4: Settings (Theme, Sync Browser Mockup Theme, Vercel Blob Token, Restore Defaults) -->
     <section class="u-accordion-item" data-accordion-item="settings">
       <button type="button" class="u-accordion-trigger" data-accordion-trigger="settings">
         <span class="u-accordion-trigger-left">
@@ -1022,24 +1084,46 @@
               <input id="blobTokenInput" type="password" class="u-input mono" placeholder="BLOB_READ_WRITE_TOKEN" />
             </div>
           </div>
+
+          <div class="u-settings-footer">
+            <button
+              id="btnRestoreDefaults"
+              type="button"
+              class="u-btn u-btn-soft u-btn-xs"
+            >
+              <svg width="12" height="12" viewBox="0 0 256 256" fill="currentColor">
+                <path d="M224,128a96,96,0,0,1-94.71,96H128A95.38,95.38,0,0,1,62.1,197.8a8,8,0,0,1,11-11.63A80,80,0,1,0,71.43,71.39a3.07,3.07,0,0,1-.26.25L44.59,96H72a8,8,0,0,1,0,16H24a8,8,0,0,1-8-8V56a8,8,0,0,1,16,0V85.8L59.84,60A96,96,0,0,1,224,128Z"/>
+              </svg>
+              Restore to defaults
+            </button>
+          </div>
         </div>
       </div>
     </section>
   </div>
 
-  <!-- Notification Toast with Closing Icon -->
+  <!-- Notification Toast with Optional Undo Button + Closing Icon -->
   <div id="statusBox" class="u-status" role="status">
     <span id="statusText"></span>
-    <button
-      id="btnCloseStatus"
-      type="button"
-      class="u-status-close"
-      aria-label="Close notification"
-    >
-      <svg width="12" height="12" viewBox="0 0 256 256" fill="currentColor">
-        <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/>
-      </svg>
-    </button>
+    <div class="u-status-actions">
+      <button
+        id="btnUndoStatus"
+        type="button"
+        class="u-status-undo"
+      >
+        Undo
+      </button>
+      <button
+        id="btnCloseStatus"
+        type="button"
+        class="u-status-close"
+        aria-label="Close notification"
+      >
+        <svg width="12" height="12" viewBox="0 0 256 256" fill="currentColor">
+          <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/>
+        </svg>
+      </button>
+    </div>
   </div>
 
   <script type="module" src="popup.js"></script>
