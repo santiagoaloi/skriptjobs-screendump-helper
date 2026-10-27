@@ -3,7 +3,7 @@
  * Package the Chrome Extension (`extension/`) and publish/update a GitHub Release
  * with Keep-a-Changelog release notes extracted from CHANGELOG.md.
  */
-import { readFileSync, writeFileSync, mkdirSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,13 +20,11 @@ const distDir = path.join(rootDir, 'dist');
 mkdirSync(distDir, { recursive: true });
 
 const versionedZip = path.join(distDir, `skriptjobs-screendump-helper-${tag}.zip`);
-const latestZip = path.join(distDir, 'skriptjobs-screendump-helper-extension.zip');
 
 execFileSync('zip', ['-rq', versionedZip, '.'], {
   cwd: path.join(rootDir, 'extension'),
   stdio: 'inherit',
 });
-copyFileSync(versionedZip, latestZip);
 
 const changelog = readFileSync(path.join(rootDir, 'CHANGELOG.md'), 'utf8');
 const escaped = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -37,7 +35,7 @@ const body = match ? match[1].trim() : changelog.trim();
 const header = `## Skriptjobs Screendump Helper ${tag}
 
 ### 📦 Quick Download & Install
-1. Download **\`skriptjobs-screendump-helper-${tag}.zip\`** (or \`skriptjobs-screendump-helper-extension.zip\`) from **Assets** below and unzip it.
+1. Download **\`skriptjobs-screendump-helper-${tag}.zip\`** from **Assets** below and unzip it.
 2. Open \`chrome://extensions\` in Chrome and enable **Developer mode**.
 3. Click **Load unpacked** and select the unzipped folder.
 
@@ -52,7 +50,7 @@ try {
   execFileSync('gh', ['release', 'view', tag], { cwd: rootDir, stdio: 'ignore' });
   execFileSync(
     'gh',
-    ['release', 'upload', tag, versionedZip, latestZip, '--clobber'],
+    ['release', 'upload', tag, versionedZip, '--clobber'],
     { cwd: rootDir, stdio: 'inherit' }
   );
   execFileSync(
@@ -77,7 +75,6 @@ try {
       'create',
       tag,
       versionedZip,
-      latestZip,
       '--target',
       'main',
       '--title',
